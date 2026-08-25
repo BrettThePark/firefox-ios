@@ -15,11 +15,16 @@ let SearchSuggestClientErrorInvalidResponse = 1
  *
  * Query callbacks that must run even if they are cancelled should wrap their contents in `withExtendendLifetime`.
  */
-// TODO: FXIOS-14199 - SearchSuggestClient shouldn't be @unchecked Sendable
-final class SearchSuggestClient: @unchecked Sendable {
-    fileprivate let searchEngine: OpenSearchEngine
-    fileprivate let userAgent: String
-    fileprivate var task: URLSessionTask?
+@MainActor
+final class SearchSuggestClient {
+    private let searchEngine: OpenSearchEngine
+    private let userAgent: String
+    private var task: URLSessionTask?
+    nonisolated private static let invalidResponseError = NSError(
+        domain: SearchSuggestClientErrorDomain,
+        code: SearchSuggestClientErrorInvalidResponse,
+        userInfo: nil
+    )
 
     fileprivate lazy var urlSession: URLSession = makeURLSession(
         userAgent: self.userAgent,
@@ -31,12 +36,15 @@ final class SearchSuggestClient: @unchecked Sendable {
         self.userAgent = userAgent
     }
 
+    deinit {
+        task?.cancel()
+    }
+
     func query(
         _ query: String,
         callback: @escaping @Sendable (_ response: [String]?, _ error: NSError?) -> Void
     ) {
-        let url = searchEngine.suggestURLForQuery(query)
-        if url == nil {
+        guard let url = searchEngine.suggestURLForQuery(query) else {
             let error = NSError(
                 domain: SearchSuggestClientErrorDomain,
                 code: SearchSuggestClientErrorInvalidEngine,
@@ -46,8 +54,8 @@ final class SearchSuggestClient: @unchecked Sendable {
             return
         }
 
-        task = urlSession.dataTask(with: url!) { [weak self] (data, response, error) in
-            if let error = error {
+        task = urlSession.dataTask(with: url) { (data, response, error) in
+            if let error {
                 callback(nil, error as NSError?)
                 return
             }
@@ -55,7 +63,7 @@ final class SearchSuggestClient: @unchecked Sendable {
             guard let data = data,
                   validatedHTTPResponse(response, statusCode: 200..<300) != nil
             else {
-                self?.handleInvalidResponseError(callback: callback)
+                callback(nil, Self.invalidResponseError)
                 return
             }
 
@@ -67,27 +75,18 @@ final class SearchSuggestClient: @unchecked Sendable {
             // That is, an array of at least two elements: the search term and an array of suggestions.
 
             if array?.count ?? 0 < 2 {
-                self?.handleInvalidResponseError(callback: callback)
+                callback(nil, Self.invalidResponseError)
                 return
             }
 
             guard let suggestions = array?[1] as? [String] else {
-                self?.handleInvalidResponseError(callback: callback)
+                callback(nil, Self.invalidResponseError)
                 return
             }
 
             callback(suggestions, nil)
         }
         task?.resume()
-    }
-
-    private func handleInvalidResponseError(callback: @escaping (_ response: [String]?, _ error: NSError?) -> Void) {
-        let error = NSError(
-            domain: SearchSuggestClientErrorDomain,
-            code: SearchSuggestClientErrorInvalidResponse,
-            userInfo: nil
-        )
-        callback(nil, error)
     }
 
     func cancelPendingRequest() {
