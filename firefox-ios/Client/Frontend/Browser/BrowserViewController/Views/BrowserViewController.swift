@@ -25,6 +25,7 @@ import struct MozillaAppServices.Login
 import enum MozillaAppServices.BookmarkRoots
 import struct MozillaAppServices.VisitObservation
 import enum MozillaAppServices.VisitType
+import enum MozillaAppServices.OAuthScope
 
 class BrowserViewController: UIViewController,
                              SearchBarLocationProvider,
@@ -1345,7 +1346,7 @@ class BrowserViewController: UIViewController,
             HomepageState.self,
             for: .homepage,
             window: windowUUID
-        )?.searchState.shouldShowSearchBar ?? false
+        )?.searchBarState.shouldShowSearchBar ?? false
 
         guard shouldShowSearchBar, !isEditing, contentContainer.hasHomepage else {
             guard addressToolbarContainer.isHidden == true else { return }
@@ -2086,26 +2087,32 @@ class BrowserViewController: UIViewController,
             return
         }
 
-        let isNICErrorCode = url.absoluteString.contains(String(Int(
-            CFNetworkErrors.cfurlErrorNotConnectedToInternet.rawValue)))
-        let isWaybackErrorCode: Bool = {
+        let featureFlag = NativeErrorPageFeatureFlag()
+
+        let isNoInternetError = url.absoluteString.contains(
+            String(Int(CFNetworkErrors.cfurlErrorNotConnectedToInternet.rawValue))
+        )
+        let isWaybackError: Bool = {
             guard
                 let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
                 let codeString = components.queryItems?.first(where: { $0.name == "code" })?.value,
                 let code = Int(codeString)
             else { return false }
+
             return WaybackCodes.isWaybackCode(code)
         }()
-        let noInternetConnectionEnabled = isNICErrorCode &&
-            NativeErrorPageFeatureFlag().isNativeErrorPageEnabled
-        let isCertificateError = NativeErrorPageFeatureFlag().isBadCertDomainErrorPageEnabled &&
-            NativeErrorPageHelper.isBadCertDomainErrorURL(url)
-        let isShowWayback = isWaybackErrorCode &&
-            NativeErrorPageFeatureFlag().isWaybackEnabled
+        let isBadCertError = NativeErrorPageHelper.isBadCertDomainErrorURL(url)
+
+        let shouldShowNoInternetErrorPage =
+            isNoInternetError && featureFlag.isNativeErrorPageEnabled
+        let shouldShowBadCertErrorPage =
+            isBadCertError && featureFlag.isBadCertDomainErrorPageEnabled
+        let shouldShowWaybackErrorPage =
+            isWaybackError && featureFlag.isWaybackEnabled
 
         if isAboutHomeURL {
             showEmbeddedHomepage(inline: true, isPrivate: tabManager.selectedTab?.isPrivate ?? false)
-        } else if isErrorURL && (noInternetConnectionEnabled || isCertificateError || isShowWayback) {
+        } else if isErrorURL && (shouldShowNoInternetErrorPage || shouldShowBadCertErrorPage || shouldShowWaybackErrorPage) {
             showEmbeddedNativeErrorPage()
         } else {
             showEmbeddedWebview()
@@ -3393,6 +3400,30 @@ class BrowserViewController: UIViewController,
                                     navItemText: .Close,
                                     vcBeingPresented: vcToPresent,
                                     topTabsVisible: UIDevice.current.userInterfaceIdiom == .pad)
+    }
+
+    func presentPairingViewController(_ pairingURL: URL) {
+        guard let accountManager = profile.rustFxA.accountManager else { return }
+
+        accountManager.beginPairingAuthentication(
+            pairingUrl: pairingURL.absoluteString,
+            entrypoint: "pairing_\(FxAEntrypoint.fxaDeepLinkNavigation.rawValue)",
+            scopes: [OAuthScope.profile, OAuthScope.oldSync, OAuthScope.session]
+        ) { [weak self] result in
+            guard let self, case .success(let supplicantURL) = result else { return }
+            let viewController = FxAWebViewController(
+                pageType: .qrCode(url: supplicantURL),
+                profile: profile,
+                dismissalStyle: .dismiss,
+                deepLinkParams: FxALaunchParams(entrypoint: .fxaDeepLinkNavigation, query: [:])
+            )
+            presentThemedViewController(
+                navItemLocation: .Left,
+                navItemText: .Close,
+                vcBeingPresented: viewController,
+                topTabsVisible: UIDevice.current.userInterfaceIdiom == .pad
+            )
+        }
     }
 
     // MARK: - Handle Deeplink open URL / query
@@ -5044,13 +5075,7 @@ extension BrowserViewController: KeyboardHelperDelegate {
         let toolbarState = store.state.componentState(ToolbarState.self, for: .toolbar, window: windowUUID)
         let isEditing = toolbarState?.addressToolbar.isEditing == true
         if !isEditing {
-            store.dispatch(
-                ToolbarAction(
-                    shouldShowKeyboard: false,
-                    windowUUID: windowUUID,
-                    actionType: ToolbarActionType.keyboardStateDidChange
-                )
-            )
+            store.dispatch(ToolbarModernAction.didCancelKeyboardRequest, forWindowUUID: windowUUID)
         }
         tabManager.selectedTab?.setFindInPage(isBottomSearchBar: isBottomSearchBar,
                                               doesFindInPageBarExist: iOS15FindInPageBar != nil)

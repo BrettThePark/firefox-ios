@@ -1738,7 +1738,7 @@ extension String {
                 value: "The site may be busy or unavailable. Try again later. If other pages won’t load, check your Wi-Fi or data connection. %@ can also search the Wayback Machine for an earlier version of this page.",
                 comment: "Description of the error page when the app is unable to connect to the server and will show a wayback fallback. %@ is the app name (e.g. Firefox).")
             public static let SearchLabel = MZLocalizedString(
-                key: "NativeErrorPage.Wayback.Error.Search.v155",
+                key: "NativeErrorPage.Wayback.Error.SearchWayback.v155",
                 tableName: "NativeErrorPage",
                 value: "View Archived Version",
                 comment: "Button label on the error page when the app is unable to connect to the server - clicking on the button launches a search for an earlier version of the page on the Wayback Machine.")
@@ -4513,12 +4513,6 @@ extension String {
                 value: "Describe the issue in detail (optional)",
                 comment: "Placeholder shown in the optional multiline field where the user can describe the website problem in their own words, in the Report a Website Issue form."
             )
-            public static let DetailsAccessibilityLabel = MZLocalizedString(
-                key: "WebCompatReporter.Fields.DetailsAccessibilityLabel.v154",
-                tableName: "WebCompatReporter",
-                value: "Describe the issue in detail",
-                comment: "Accessibility label for the multiline field where the user can describe the website problem in their own words, in the Report a Website Issue form."
-            )
         }
         public struct AdditionalInfo {
             public static let Title = MZLocalizedString(
@@ -4695,6 +4689,26 @@ extension String {
             value: "Loading Document",
             comment: "The accessibility label read when loading a document in the web view's custom document loading UI."
         )
+    }
+}
+
+// MARK: - Google Lens
+extension String {
+    public struct GoogleLens {
+        /// The full-screen interstitial shown while a Google Lens image search is loading.
+        public struct Interstitial {
+            public static let LoadingLabel = MZLocalizedString(
+                key: "GoogleLens.Interstitial.LoadingLabel.v156",
+                tableName: "GoogleLens",
+                value: "Finding Image Results…",
+                comment: "Label shown next to a loading spinner on the full screen state that appears while an image is being searched with Google Lens.")
+
+            public static let CancelButtonTitle = MZLocalizedString(
+                key: "GoogleLens.Interstitial.CancelButtonTitle.v156",
+                tableName: "GoogleLens",
+                value: "Cancel",
+                comment: "Title of the button that stops an in-progress Google Lens image search and returns the user to what they were looking at before.")
+        }
     }
 }
 
@@ -9373,6 +9387,11 @@ extension String {
                 tableName: "WebCompatReporter",
                 value: "URL",
                 comment: "Placeholder shown in the URL field when no web address has been entered, in the Report a Website Issue form.")
+             public static let DetailsAccessibilityLabel = MZLocalizedString(
+                key: "WebCompatReporter.Fields.DetailsAccessibilityLabel.v154",
+                tableName: "WebCompatReporter",
+                value: "Describe the issue in detail",
+                comment: "Accessibility label for the multiline field where the user can describe the website problem in their own words, in the Report a Website Issue form.")
         }
     }
 }
