@@ -74,6 +74,30 @@ are passed in through protocols and model objects (e.g.
   local diagnostic configuration (not CI) to find type-checking hotspots that are
   cheap wins independent of modularization.
 
+## Phase 0.5 — Build hygiene (before any modularization)
+
+Fixed per-build overhead that modularization does not address. Each item is
+testable in isolation with `scripts/build-time-experiments/run-all.sh`, which
+measures cold, no-op, and incremental builds for the baseline and for each
+change applied on its own (see `scripts/build-time-experiments/README.md`).
+
+1. **Run-script phases marked `alwaysOutOfDate`.** The Nimbus FML phase
+   declares proper inputs/outputs but is still `alwaysOutOfDate = 1`, so it
+   runs on every build; the SwiftLint, test-fixtures rsync, reader-mode rsync,
+   and optional-resources phases are `alwaysOutOfDate` with no declared
+   outputs. (Both Glean phases are already correctly declared.) Experiments 01
+   and 03 measure dropping the flag + declaring I/O, and skipping in-build
+   SwiftLint entirely.
+2. **dSYM generation in dev configs.** Two `Fennec_Testing` configurations
+   still use `dwarf-with-dsym`; dev builds only need `dwarf`. Experiment 02.
+3. **`ModifiedCopyMacro` pulls in swift-syntax (600.0.1) as a from-source
+   build dependency** — a well-known multi-minute clean-build cost. ~63 call
+   sites, all Redux state structs. Experiment 05 isolates the cost with a
+   standalone probe package; the fix is either prebuilt swift-syntax support
+   (newer Xcode/SwiftPM) or hand-writing the `copy` helpers.
+4. **Explicitly Built Modules** (Xcode 16+): settings flip, measured by
+   experiment 04; verify the build still succeeds before trusting numbers.
+
 ## Phase 1 — Cut the seams (2–3 PRs)
 
 These unblock everything after them:
