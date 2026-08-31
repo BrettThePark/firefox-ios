@@ -55,4 +55,11 @@ public final class AppContainer: ServiceProvider {
     public func reset() {
         container.reset()
     }
+
+    public func rebuild(_ configure: (ServiceProvider) -> Void) {
+        let staging = AppContainer()
+        configure(staging)
+        staging.bootstrap()
+        container = staging.container
+    }
 }

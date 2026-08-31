@@ -22,4 +22,10 @@ public protocol ServiceProvider {
     func register<T>(service: T)
     func bootstrap()
     func reset()
+
+    /// Atomically replaces all registrations. The replacement container is fully
+    /// registered and bootstrapped before it is swapped in, so concurrent
+    /// `resolve` calls never observe an empty container the way
+    /// `reset()` + `register` + `bootstrap` allows.
+    func rebuild(_ configure: (ServiceProvider) -> Void)
 }

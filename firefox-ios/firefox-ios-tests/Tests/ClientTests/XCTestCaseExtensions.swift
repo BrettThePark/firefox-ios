@@ -42,3 +42,28 @@ extension XCTestCase {
         DependencyHelperMock().reset()
     }
 }
+
+/// Instantiated once per test process by XCTest (NSPrincipalClass in Info.plist)
+/// before any tests run. Bootstraps the dependency container so no test depends
+/// on an earlier test having populated it — required for tests to run first in a
+/// fresh process, e.g. on parallel-testing simulator clones (FXIOS: Experiments
+/// resolved an empty AppContainer and crashed the host).
+@objc(ClientTestsPrincipal)
+final class ClientTestsPrincipal: NSObject {
+    override init() {
+        super.init()
+        let bootstrap: @MainActor () -> Void = {
+            DependencyHelperMock().bootstrapDependencies()
+            // Initialize the process-lifetime Nimbus singleton now, while exactly one
+            // profile exists and no test is mid-rebuild. Lazily initializing it later
+            // races per-test container rebuilds and can segfault in the Rust FFI
+            // (RemoteSettingsService handle from a torn-down profile).
+            _ = Experiments.shared
+        }
+        if Thread.isMainThread {
+            MainActor.assumeIsolated { bootstrap() }
+        } else {
+            DispatchQueue.main.sync { MainActor.assumeIsolated { bootstrap() } }
+        }
+    }
+}

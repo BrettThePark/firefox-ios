@@ -27,7 +27,7 @@ final class LaunchScreenViewModelTests: XCTestCase {
 
     override func tearDown() async throws {
         DependencyHelperMock().reset()
-        AppContainer.shared.reset()
+        DependencyHelperMock().reset()
         profile = nil
         messageManager = nil
         delegate = nil

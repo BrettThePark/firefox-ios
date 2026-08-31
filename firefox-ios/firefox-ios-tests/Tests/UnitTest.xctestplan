@@ -262,6 +262,7 @@
       }
     },
     {
+      "parallelizable" : true,
       "skippedTests" : [
         "BrowserViewControllerWebViewDelegateTests\/testWebViewDidFinishNavigation_takeScreenshotWhenTabIsSelected()",
         "ContentBlockerTests",

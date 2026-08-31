@@ -40,7 +40,7 @@ class JumpBackInViewModelTests: XCTestCase {
         stubBrowserViewController = nil
         mockTabManager = nil
         mockProfile = nil
-        AppContainer.shared.reset()
+        DependencyHelperMock().reset()
     }
 
     // MARK: - Switch to tab

@@ -13,23 +13,52 @@ final class DependencyHelperMock {
         injectedProfile: Profile? = nil,
         injectedWindowManager: WindowManager? = nil,
         injectedTabManager: TabManager? = nil,
+        injectedThemeManager: ThemeManager? = nil,
         injectedMicrosurveyManager: MicrosurveyManager? = nil,
         injectedMerinoManager: MerinoManagerProvider? = nil,
         injectedFeatureFlagProvider: FeatureFlagProviding? = nil,
         injectedUserFeaturePreferences: UserFeaturePreferring? = nil
     ) {
-        AppContainer.shared.reset()
+        // Registrations go into a staging container that is swapped in atomically
+        // (see ServiceProvider.rebuild). Never reset the live shared container here:
+        // async work from a previous test may still resolve from it mid-bootstrap.
+        AppContainer.shared.rebuild { container in
+            let profile: Profile = injectedProfile ?? BrowserProfile(
+                localName: "profile"
+            )
+            registerCoreServices(
+                in: container,
+                profile: profile,
+                injectedWindowManager: injectedWindowManager,
+                injectedTabManager: injectedTabManager,
+                injectedThemeManager: injectedThemeManager
+            )
+            registerManagerServices(
+                in: container,
+                profile: profile,
+                injectedMicrosurveyManager: injectedMicrosurveyManager,
+                injectedMerinoManager: injectedMerinoManager,
+                injectedFeatureFlagProvider: injectedFeatureFlagProvider,
+                injectedUserFeaturePreferences: injectedUserFeaturePreferences
+            )
+        }
+    }
 
-        let profile: Profile = injectedProfile ?? BrowserProfile(
-            localName: "profile"
-        )
-        AppContainer.shared.register(service: profile as Profile)
+    @MainActor
+    private func registerCoreServices(
+        in container: ServiceProvider,
+        profile: Profile,
+        injectedWindowManager: WindowManager?,
+        injectedTabManager: TabManager?,
+        injectedThemeManager: ThemeManager?
+    ) {
+        container.register(service: profile as Profile)
 
         let diskImageStore: DiskImageStore = DefaultDiskImageStore(
             files: profile.files,
             namespace: TabManagerConstants.tabScreenshotNamespace,
             quality: UIConstants.ScreenshotQuality)
-        AppContainer.shared.register(service: diskImageStore as DiskImageStore)
+        container.register(service: diskImageStore as DiskImageStore)
 
         let windowUUID = WindowUUID.XCTestDefaultUUID
         let windowManager: WindowManager = injectedWindowManager ?? MockWindowManager(
@@ -39,52 +68,62 @@ final class DependencyHelperMock {
         var tabManager: TabManager!
 
         let appSessionProvider: AppSessionProvider = AppSessionManager()
-        AppContainer.shared.register(service: appSessionProvider as AppSessionProvider)
+        container.register(service: appSessionProvider as AppSessionProvider)
 
         tabManager = injectedTabManager ?? MockTabManager()
-        AppContainer.shared.register(service: MockThemeManager() as ThemeManager)
+        container.register(service: (injectedThemeManager ?? MockThemeManager()) as ThemeManager)
 
         let searchEnginesManager = SearchEnginesManager(
             prefs: profile.prefs,
             files: profile.files,
             engineProvider: MockSearchEngineProvider()
         )
-        AppContainer.shared.register(service: searchEnginesManager)
+        container.register(service: searchEnginesManager)
 
         let downloadQueue = DownloadQueue()
-        AppContainer.shared.register(service: downloadQueue)
+        container.register(service: downloadQueue)
 
-        AppContainer.shared.register(service: windowManager as WindowManager)
+        container.register(service: windowManager as WindowManager)
         windowManager.newBrowserWindowConfigured(AppWindowInfo(tabManager: tabManager), uuid: windowUUID)
+    }
 
+    @MainActor
+    private func registerManagerServices(
+        in container: ServiceProvider,
+        profile: Profile,
+        injectedMicrosurveyManager: MicrosurveyManager?,
+        injectedMerinoManager: MerinoManagerProvider?,
+        injectedFeatureFlagProvider: FeatureFlagProviding?,
+        injectedUserFeaturePreferences: UserFeaturePreferring?
+    ) {
         let microsurveyManager: MicrosurveyManager = injectedMicrosurveyManager ?? MockMicrosurveySurfaceManager()
-        AppContainer.shared.register(service: microsurveyManager as MicrosurveyManager)
+        container.register(service: microsurveyManager as MicrosurveyManager)
 
         let merinoManager: MerinoManagerProvider = injectedMerinoManager ?? MockMerinoManager()
-        AppContainer.shared.register(service: merinoManager as MerinoManagerProvider)
+        container.register(service: merinoManager as MerinoManagerProvider)
 
         let documentLogger = DocumentLogger(logger: MockLogger())
-        AppContainer.shared.register(service: documentLogger)
+        container.register(service: documentLogger)
 
         let gleanUsageReportingMetricsService: GleanUsageReportingMetricsService =
         MockGleanUsageReportingMetricsService(profile: profile)
-        AppContainer.shared.register(service: gleanUsageReportingMetricsService)
+        container.register(service: gleanUsageReportingMetricsService)
 
-        AppContainer.shared.register(service: ShareTelemetry())
+        container.register(service: ShareTelemetry())
 
         let featureFlagProvider = injectedFeatureFlagProvider ?? FeatureFlagsProvider(prefs: profile.prefs)
-        AppContainer.shared.register(service: featureFlagProvider as FeatureFlagProviding)
+        container.register(service: featureFlagProvider as FeatureFlagProviding)
 
         let userFeatureProvider = injectedUserFeaturePreferences ?? UserFeaturePreferenceManager(
             prefs: profile.prefs
         )
-        AppContainer.shared.register(service: userFeatureProvider as UserFeaturePreferring)
-
-        // Tell the container we are done registering
-        AppContainer.shared.bootstrap()
+        container.register(service: userFeatureProvider as UserFeaturePreferring)
     }
 
     func reset() {
-        AppContainer.shared.reset()
+        // Intentionally leaves the container populated: emptying it while async
+        // work from the finishing test is still in flight makes any late
+        // AppContainer.resolve fatalError (host crash under parallel testing).
+        // The next test's bootstrapDependencies() swaps in fresh registrations.
     }
 }

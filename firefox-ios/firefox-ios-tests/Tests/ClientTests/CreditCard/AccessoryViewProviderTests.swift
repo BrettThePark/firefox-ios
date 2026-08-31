@@ -22,7 +22,7 @@ class AccessoryViewProviderTests: XCTestCase {
         super.tearDown()
 
         accessoryViewProvider = nil
-        AppContainer.shared.reset()
+        DependencyHelperMock().reset()
     }
 
     func testReloadForCreditCardView() {

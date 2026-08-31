@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import UIKit
+import Common
 import XCTest
 import Shared
 
@@ -19,7 +20,9 @@ class SearchBarSettingsViewModelTests: XCTestCase {
         prefs = profile.prefs
         prefs.clearAll()
         mockNotificationCenter = MockNotificationCenter()
-        DependencyHelperMock().bootstrapDependencies()
+        DependencyHelperMock().bootstrapDependencies(
+            injectedUserFeaturePreferences: UserFeaturePreferenceManager(prefs: prefs)
+        )
     }
 
     override func tearDown() async throws {
