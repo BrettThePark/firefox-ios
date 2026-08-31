@@ -1182,10 +1182,15 @@ final class BrowserCoordinator: BaseCoordinator,
     }
 
     func showGoogleLensCamera() {
+        showGoogleLensCamera(isCameraAvailable: UIImagePickerController.isSourceTypeAvailable(.camera))
+    }
+
+    func showGoogleLensCamera(isCameraAvailable: Bool) {
         guard !childCoordinators.contains(where: { $0 is CameraCoordinator }) else { return }
         let coordinator = CameraCoordinator(
             parentCoordinatorDelegate: self,
             router: router,
+            isCameraAvailable: isCameraAvailable,
             cameraReason: .googleLens
         ) { [weak self] image in
             guard let image else { return }

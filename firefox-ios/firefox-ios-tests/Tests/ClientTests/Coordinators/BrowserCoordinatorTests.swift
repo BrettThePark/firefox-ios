@@ -435,11 +435,11 @@ final class BrowserCoordinatorTests: XCTestCase,
     }
 
     func testShowGoogleLensCamera_whenCameraUnavailable_doesNotPresentOrLeaveChild() {
-        // The simulator has no camera, so the coordinator finishes immediately and cleans
-        // itself up without presenting anything.
+        // iOS 26 simulators report a simulated camera, so availability is injected
+        // rather than assumed absent.
         let subject = createSubject()
 
-        subject.showGoogleLensCamera()
+        subject.showGoogleLensCamera(isCameraAvailable: false)
 
         XCTAssertTrue(subject.childCoordinators.isEmpty)
         XCTAssertEqual(mockRouter.presentCalled, 0)
