@@ -6,18 +6,15 @@ import Foundation
 import Storage
 import XCTest
 
+@testable import Client
+
 class FileAccessorTests: XCTestCase {
     fileprivate var testDir: String!
     fileprivate var files: FileAccessor!
 
     override func setUpWithError() throws {
         try super.setUpWithError()
-        let docPath: NSString = NSSearchPathForDirectoriesInDomains(
-            .documentDirectory,
-            .userDomainMask,
-            true
-        )[0] as NSString
-        files = MockFiles(rootPath: docPath.appendingPathComponent("filetest"))
+        files = MockFiles(rootPath: (MockFiles.testingRoot as NSString).appendingPathComponent("filetest"))
 
         testDir = try files.getAndEnsureDirectory()
         try files.removeFilesInDirectory()
@@ -83,5 +80,53 @@ class FileAccessorTests: XCTestCase {
             success = false
         }
         XCTAssertTrue(success, "Wrote to \(path)")
+    }
+
+    // MARK: - Test artifact containment
+
+    func testMockFilesRootIsNotUnderDocuments() {
+        let documents = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
+        XCTAssertFalse(
+            MockFiles().rootPath.hasPrefix(documents),
+            "Test artifacts must not be written to Documents, which persists between simulator runs"
+        )
+    }
+
+    func testMockProfileDoesNotCreateDatabasesItNeverUsed() {
+        let profile = MockProfile()
+        _ = profile.prefs
+        let root = profile.files.rootPath
+
+        profile.shutdown()
+
+        let databases = databaseFiles(under: root)
+        XCTAssertEqual(databases, [], "A profile that never opened a database should not have written one")
+    }
+
+    func testMockProfileCreatesDatabasesItActuallyUses() {
+        let profile = MockProfile()
+        _ = profile.places
+        let root = profile.files.rootPath
+
+        profile.shutdown()
+
+        XCTAssertFalse(databaseFiles(under: root).isEmpty, "Using places should still create its database")
+    }
+
+    func testMockProfileRemovesItsDirectoryWhenReleased() {
+        var root = ""
+        do {
+            let profile = MockProfile()
+            _ = profile.places
+            root = profile.files.rootPath
+            XCTAssertTrue(FileManager.default.fileExists(atPath: root))
+        }
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root), "Profile directory should be removed on deinit")
+    }
+
+    private func databaseFiles(under root: String) -> [String] {
+        let contents = (try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []
+        return contents.filter { $0.hasSuffix(".db") }.sorted()
     }
 }
