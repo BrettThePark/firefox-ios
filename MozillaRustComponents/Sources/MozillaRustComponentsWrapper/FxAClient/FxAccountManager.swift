@@ -40,6 +40,10 @@ open class FxAccountManager: @unchecked Sendable {
         }
     }
 
+    /// Block-based `NotificationCenter` observer tokens, removed on `deinit`. Without this the
+    /// observer blocks keep the manager alive and reacting to notifications for the whole process.
+    private var notificationObservers: [NSObjectProtocol] = []
+
     var state: FxaState = .uninitialized
     var profile: Profile?
     var constellation: DeviceConstellation?
@@ -61,6 +65,10 @@ open class FxAccountManager: @unchecked Sendable {
         self.applicationScopes = applicationScopes
         accountStorage = KeyChainAccountStorage(keychainAccessGroup: keychainAccessGroup)
         setupInternalListeners()
+    }
+
+    deinit {
+        notificationObservers.forEach(NotificationCenter.default.removeObserver)
     }
 
     private lazy var statePersistenceCallback: FxAStatePersistenceCallback = .init(manager: self)
@@ -500,26 +508,34 @@ open class FxAccountManager: @unchecked Sendable {
 
     func setupInternalListeners() {
         // Handle auth exceptions caught in classes that don't hold a reference to the manager.
-        _ = NotificationCenter.default.addObserver(forName: .accountAuthException, object: nil, queue: nil) { _ in
-            self.fxaFsmQueue.async {
-                self.processEvent(.checkAuthorizationStatus)
-            }
-        }
-        // Reflect updates to the local device to our own in-memory model.
-        _ = NotificationCenter.default.addObserver(
-            forName: .constellationStateUpdate, object: nil, queue: nil
-        ) { notification in
-            if let userInfo = notification.userInfo, let newState = userInfo["newState"] as? ConstellationState {
-                if let localDevice = newState.localDevice {
-                    self.deviceConfig = DeviceConfig(
-                        name: localDevice.displayName,
-                        // The other properties are likely to not get modified.
-                        deviceType: self.deviceConfig.deviceType,
-                        capabilities: self.deviceConfig.capabilities
-                    )
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .accountAuthException, object: nil, queue: nil
+            ) { [weak self] _ in
+                guard let self else { return }
+                self.fxaFsmQueue.async {
+                    self.processEvent(.checkAuthorizationStatus)
                 }
             }
-        }
+        )
+        // Reflect updates to the local device to our own in-memory model.
+        notificationObservers.append(
+            NotificationCenter.default.addObserver(
+                forName: .constellationStateUpdate, object: nil, queue: nil
+            ) { [weak self] notification in
+                guard let self else { return }
+                if let userInfo = notification.userInfo, let newState = userInfo["newState"] as? ConstellationState {
+                    if let localDevice = newState.localDevice {
+                        self.deviceConfig = DeviceConfig(
+                            name: localDevice.displayName,
+                            // The other properties are likely to not get modified.
+                            deviceType: self.deviceConfig.deviceType,
+                            capabilities: self.deviceConfig.capabilities
+                        )
+                    }
+                }
+            }
+        )
     }
 
     func requireAccount() -> PersistedFirefoxAccount {

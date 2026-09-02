@@ -143,6 +143,16 @@ class FxAccountManagerTests: XCTestCase {
     func testProfileRecoverableAuthError() {
         class MockAccount: MockFxAccount {
             var profileCallCount = 0
+            /// Fulfilled when the manager recovers from the auth error, so the test waits on this
+            /// account rather than on notifications, which are posted with `object: nil`.
+            nonisolated(unsafe) var authStatusChecked: XCTestExpectation?
+
+            override func checkAuthorizationStatus() throws -> AuthorizationInfo {
+                let info = try super.checkAuthorizationStatus()
+                authStatusChecked?.fulfill()
+                return info
+            }
+
             override func getProfile(ignoreCache: Bool) throws -> Profile {
                 let profile = try super.getProfile(ignoreCache: ignoreCache)
                 profileCallCount += 1
@@ -166,6 +176,8 @@ class FxAccountManagerTests: XCTestCase {
         // accountProfileUpdate fires once: the first getProfile call throws (no notification posted),
         // and only the second successful call fires it.
         expectation(forNotification: .accountProfileUpdate, object: nil, handler: nil)
+
+        account.authStatusChecked = expectation(description: "checkAuthorizationStatus called")
 
         let initDone = expectation(description: "Initialization done")
         mgr.initialize { _ in
@@ -237,5 +249,21 @@ class FxAccountManagerTests: XCTestCase {
             tokenServerURLCorrect.fulfill()
         }
         waitForExpectations(timeout: 5, handler: nil)
+    }
+
+    func testManagerIsDeallocatedWhenReleased() {
+        weak var weakManager: MockFxAccountManager?
+        autoreleasepool {
+            let mgr = mockFxAManager()
+            weakManager = mgr
+
+            let initDone = expectation(description: "Initialization done")
+            mgr.initialize { _ in initDone.fulfill() }
+            waitForExpectations(timeout: 5, handler: nil)
+        }
+        XCTAssertNil(weakManager,
+                     "FxAccountManager outlived its owner. Its NotificationCenter observers must be "
+                     + "removed on deinit, otherwise every manager ever created keeps reacting to "
+                     + "app-wide notifications for the life of the process")
     }
 }
