@@ -33629,10 +33629,10 @@
 		};
 		EDD592482FC1090C0015EF9E /* XCRemoteSwiftPackageReference "ModifiedCopyMacro" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/WilhelmOks/ModifiedCopyMacro.git";
+			repositoryURL = "https://github.com/BrettThePark/ModifiedCopyMacro.git";
 			requirement = {
-				kind = exactVersion;
-				version = 2.2.0;
+				branch = "widen-swift-syntax-range";
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
