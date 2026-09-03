@@ -122,6 +122,19 @@ class MockFiles: FileAccessor {
     }
 }
 
+private final class MockProfileFiles: MockFiles {
+    private let cleanupPath: String
+
+    init(rootPath: String) {
+        cleanupPath = rootPath
+        super.init(rootPath: rootPath)
+    }
+
+    deinit {
+        try? FileManager.default.removeItem(atPath: cleanupPath)
+    }
+}
+
 // TODO: FXIOS-12610 Profile should be refactored so it is **not** `Sendable`.
 final class MockProfile: Client.Profile, @unchecked Sendable {
     public var rustFxA: RustFirefoxAccounts {
@@ -134,13 +147,14 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
     public let syncManager: ClientSyncManager?
     public let firefoxSuggest: RustFirefoxSuggestProtocol?
     public let remoteSettingsService: RemoteSettingsService
-    public let mockNotificationCenter: NotificationProtocol = MockNotificationCenter()
+    public let mockNotificationCenter: NotificationProtocol
 
     fileprivate let name = "mockaccount"
 
     private let directory: String
     private let databasePrefix: String
     private let injectedPinnedSites: MockablePinnedSites?
+    private var shouldReopenLazyStores = false
 
     init(
         databasePrefix: String = "mock",
@@ -148,15 +162,17 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         remoteSettingsService: RemoteSettingsService = RemoteSettingsService(unsafeFromHandle: 0),
         injectedPinnedSites: MockablePinnedSites? = nil
     ) {
+        let profileFiles = MockProfileFiles(rootPath: (MockFiles.testingRoot as NSString)
+            .appendingPathComponent("\(databasePrefix)-\(UUID().uuidString)"))
         // Each profile owns a private subdirectory so its databases cannot be seen or
         // reused by another instance, and so teardown can remove them in one call.
-        files = MockFiles(rootPath: (MockFiles.testingRoot as NSString)
-            .appendingPathComponent("\(databasePrefix)-\(UUID().uuidString)"))
+        files = profileFiles
         syncManager = ClientSyncManagerSpy()
         self.databasePrefix = databasePrefix
         self.firefoxSuggest = firefoxSuggest
         self.remoteSettingsService = remoteSettingsService
         self.injectedPinnedSites = injectedPinnedSites
+        mockNotificationCenter = MockNotificationCenter(retaining: profileFiles)
 
         do {
             directory = try files.getAndEnsureDirectory()
@@ -168,7 +184,6 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
 
     deinit {
         shutdown()
-        try? FileManager.default.removeItem(atPath: files.rootPath)
     }
 
     public func localName() -> String {
@@ -182,8 +197,10 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
     /// these methods are only meant to close.
     public func reopen() {
         isShutdown = false
+        shouldReopenLazyStores = true
 
         _database?.reopenIfClosed()
+        _readingListDB?.reopenIfClosed()
         _ = _logins?.reopenIfClosed()
         _ = _places?.reopenIfClosed()
         _ = _tabs?.reopenIfClosed()
@@ -192,8 +209,10 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
 
     public func shutdown() {
         isShutdown = true
+        shouldReopenLazyStores = false
 
         _database?.forceClose()
+        _readingListDB?.forceClose()
         _ = _logins?.forceClose()
         _ = _places?.forceClose()
         _ = _tabs?.forceClose()
@@ -226,6 +245,9 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         ).appendingPathComponent("autofill.db").path
         let autofill = RustAutofill(databasePath: autofillDbPath)
         _autofill = autofill
+        if shouldReopenLazyStores {
+            _ = autofill.reopenIfClosed()
+        }
         return autofill
     }()
 
@@ -245,8 +267,10 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         ).appendingPathComponent("\(databasePrefix)_loginsPerField.db").path
 
         let logins = RustLogins(databasePath: newLoginsDatabasePath)
-        _ = logins.reopenIfClosed()
         _logins = logins
+        if !isShutdown {
+            _ = logins.reopenIfClosed()
+        }
 
         return logins
     }()
@@ -255,11 +279,24 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
     lazy var database: BrowserDB = {
         let database = BrowserDB(filename: "\(databasePrefix).db", schema: BrowserSchema(), files: files)
         _database = database
+        if isShutdown {
+            database.forceClose()
+        }
         return database
     }()
 
+    private var _readingListDB: BrowserDB?
     lazy var readingListDB: BrowserDB = {
-        BrowserDB(filename: "\(databasePrefix)_ReadingList.db", schema: ReadingListSchema(), files: files)
+        let database = BrowserDB(
+            filename: "\(databasePrefix)_ReadingList.db",
+            schema: ReadingListSchema(),
+            files: files
+        )
+        _readingListDB = database
+        if isShutdown {
+            database.forceClose()
+        }
+        return database
     }()
 
     private var _places: RustPlaces?
@@ -270,8 +307,10 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         ).appendingPathComponent("\(databasePrefix)_places.db").path
 
         let places = RustPlaces(databasePath: placesDatabasePath, notificationCenter: mockNotificationCenter)
-        _ = places.reopenIfClosed()
         _places = places
+        if !isShutdown {
+            _ = places.reopenIfClosed()
+        }
 
         return places
     }()
@@ -284,6 +323,9 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         ).appendingPathComponent("\(databasePrefix)_tabs.db").path
         let tabs = RustRemoteTabs(databasePath: tabsDbPath)
         _tabs = tabs
+        if shouldReopenLazyStores {
+            _ = tabs.reopenIfClosed()
+        }
 
         return tabs
     }()

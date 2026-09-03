@@ -85,9 +85,12 @@ class FileAccessorTests: XCTestCase {
     // MARK: - Test artifact containment
 
     func testMockFilesRootIsNotUnderDocuments() {
-        let documents = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
+        let documents = URL(
+            fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
+        ).standardizedFileURL
+        let root = URL(fileURLWithPath: MockFiles().rootPath).standardizedFileURL
         XCTAssertFalse(
-            MockFiles().rootPath.hasPrefix(documents),
+            root.pathComponents.starts(with: documents.pathComponents),
             "Test artifacts must not be written to Documents, which persists between simulator runs"
         )
     }
@@ -99,7 +102,7 @@ class FileAccessorTests: XCTestCase {
 
         profile.shutdown()
 
-        let databases = databaseFiles(under: root)
+        let databases = databaseArtifacts(under: root)
         XCTAssertEqual(databases, [], "A profile that never opened a database should not have written one")
     }
 
@@ -110,7 +113,26 @@ class FileAccessorTests: XCTestCase {
 
         profile.shutdown()
 
-        XCTAssertFalse(databaseFiles(under: root).isEmpty, "Using places should still create its database")
+        XCTAssertFalse(databaseArtifacts(under: root).isEmpty, "Using places should still create its database")
+    }
+
+    func testMockProfileDoesNotOpenDatabaseAccessedAfterShutdown() {
+        let profile = MockProfile()
+        let root = profile.files.rootPath
+
+        profile.shutdown()
+        _ = profile.places
+
+        XCTAssertTrue(profile.readingList.getAvailableRecords().value.isFailure)
+        XCTAssertEqual(databaseArtifacts(under: root), [])
+    }
+
+    func testMockProfileReopensTabsInitializedAfterReopen() {
+        let profile = MockProfile()
+
+        profile.reopen()
+
+        XCTAssertTrue(profile.tabs.getAll().value.isSuccess)
     }
 
     func testMockProfileRemovesItsDirectoryWhenReleased() {
@@ -125,8 +147,28 @@ class FileAccessorTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: root), "Profile directory should be removed on deinit")
     }
 
-    private func databaseFiles(under root: String) -> [String] {
+    func testMockProfileKeepsDirectoryWhileReadingListIsRetained() {
+        var readingList: ReadingList?
+        var root = ""
+        do {
+            let profile = MockProfile()
+            readingList = profile.readingList
+            root = profile.files.rootPath
+        }
+
+        XCTAssertNotNil(readingList)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: root))
+        XCTAssertTrue(readingList?.getAvailableRecords().value.isFailure == true)
+
+        readingList = nil
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: root))
+    }
+
+    private func databaseArtifacts(under root: String) -> [String] {
         let contents = (try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []
-        return contents.filter { $0.hasSuffix(".db") }.sorted()
+        return contents.filter {
+            $0.hasSuffix(".db") || $0.hasSuffix(".db-wal") || $0.hasSuffix(".db-shm")
+        }.sorted()
     }
 }
