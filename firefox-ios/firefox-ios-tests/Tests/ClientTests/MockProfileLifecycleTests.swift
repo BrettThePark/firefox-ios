@@ -9,7 +9,7 @@ import Testing
 @testable import Client
 
 @Suite("MockProfile")
-struct MockProfileTests {
+struct MockProfileLifecycleTests {
     @Test("Reading List follows the profile lifecycle")
     func readingListLifecycle() async {
         await assertLifecycle {
