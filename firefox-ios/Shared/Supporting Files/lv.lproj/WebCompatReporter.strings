@@ -1,3 +1,9 @@
+/* Tappable link at the end of the Additional Info caption that opens a page explaining how the report data is used, in the Report a Website Issue form. */
+"WebCompatReporter.AdditionalInfo.LearnMore.v154" = "Uzzināt vairāk";
+
+/* Error message shown under the URL field when the address entered has an invalid format, in the Report a Website Issue form. */
+"WebCompatReporter.Fields.URLError.v155" = "Jāievada derīgs URL";
+
 /* Bullet on the Report Preview screen, for the amount of memory the device has. */
 "WebCompatReporter.Preview.Data.AvailableMemory.v155" = "Ierīces pieejamā atmiņa";
 
