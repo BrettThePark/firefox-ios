@@ -1961,6 +1961,7 @@
 		D3C744CF1A687D6C004CE85D /* URIFixup.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3C744CC1A687D6C004CE85D /* URIFixup.swift */; };
 		D3CFD3641CC5605B0064AB4A /* SecurityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3CFD3631CC5605B0064AB4A /* SecurityTests.swift */; };
 		D3D488591ABB54CD00A93597 /* FileAccessorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3D488581ABB54CD00A93597 /* FileAccessorTests.swift */; };
+		B0A92F012F31000100DB1EA1 /* MockProfileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0A92F012F31000100DB1EA0 /* MockProfileTests.swift */; };
 		D3E171C21A841EAD00AB44CD /* KIFHelper.js in Resources */ = {isa = PBXBuildFile; fileRef = D3E171C11A841EAD00AB44CD /* KIFHelper.js */; };
 		D3E8EF101B97BE69001900FB /* ClearPrivateDataTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E8EEE71B97A87A001900FB /* ClearPrivateDataTableViewController.swift */; };
 		D3EF586827F3488BB522F2FF /* PDFDocumentExtensionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A13E0AA0B57849608FF108CA /* PDFDocumentExtensionTests.swift */; };
@@ -11221,6 +11222,7 @@
 		D3C744CC1A687D6C004CE85D /* URIFixup.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = URIFixup.swift; sourceTree = "<group>"; };
 		D3CFD3631CC5605B0064AB4A /* SecurityTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SecurityTests.swift; sourceTree = "<group>"; };
 		D3D488581ABB54CD00A93597 /* FileAccessorTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileAccessorTests.swift; sourceTree = "<group>"; };
+		B0A92F012F31000100DB1EA0 /* MockProfileTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MockProfileTests.swift; sourceTree = "<group>"; };
 		D3DD4921B727D8F64D05E060 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/FindInPage.strings; sourceTree = "<group>"; };
 		D3E171C11A841EAD00AB44CD /* KIFHelper.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; path = KIFHelper.js; sourceTree = "<group>"; };
 		D3E8EEE71B97A87A001900FB /* ClearPrivateDataTableViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ClearPrivateDataTableViewController.swift; sourceTree = "<group>"; };
@@ -17479,6 +17481,7 @@
 				399BA7FF2F901D8600CCC502 /* UserFeaturePreferenceManagerTests.swift */,
 				A1B2C3D4E5F6789012345678 /* FeatureFlagsProviderTests.swift */,
 				D3D488581ABB54CD00A93597 /* FileAccessorTests.swift */,
+				B0A92F012F31000100DB1EA0 /* MockProfileTests.swift */,
 				C787D8C22C1CB77900940123 /* FirefoxAccountSignInViewControllerTests.swift */,
 				E1AEC16D286E0CF500062E29 /* Frontend */,
 				3943A81C1E9807C700D4F6DC /* FxAPushMessageTest.swift */,
@@ -20785,6 +20788,7 @@
 				AAD00A7C2FBB53EC00123E8C /* QuickAnswersMiddlewareTests.swift in Sources */,
 				C2FA00042FFF000100AD1FBD /* RemoteQuickAnswersConfigFetcherTests.swift in Sources */,
 				D3D488591ABB54CD00A93597 /* FileAccessorTests.swift in Sources */,
+				B0A92F012F31000100DB1EA1 /* MockProfileTests.swift in Sources */,
 				EC0FBD2F30069252005CCA62 /* FolderSectionHeaderViewTests.swift in Sources */,
 				EEB965162FBCCE7B00D6C232 /* ReaderModeSchemeHandlerTests.swift in Sources */,
 				FF0005AD2F000004000BBBBB /* MockQuickAnswersStore.swift in Sources */,
