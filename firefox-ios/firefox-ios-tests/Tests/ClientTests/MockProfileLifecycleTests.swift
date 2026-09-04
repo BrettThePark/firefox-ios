@@ -3,6 +3,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import Foundation
+import Shared
 import Storage
 import Testing
 
@@ -10,130 +11,82 @@ import Testing
 
 @Suite("MockProfile lifecycle")
 struct MockProfileLifecycleTests {
-    @Test("Reading List follows the profile lifecycle")
-    func readingListLifecycle() async {
-        await assertLifecycle {
-            $0.readingList.getAvailableRecords().value.isSuccess
+    enum Store: CaseIterable {
+        case readingList, places, tabs, logins, autofill, legacyBrowserDB
+
+        func isUsable(in profile: MockProfile) async -> Bool {
+            switch self {
+            case .readingList:
+                return await profile.readingList.getAvailableRecords().asyncValue.isSuccess
+            case .places:
+                return await profile.places.getRecentBookmarks(limit: 1).asyncValue.isSuccess
+            case .tabs:
+                return await profile.tabs.getAll().asyncValue.isSuccess
+            case .logins:
+                return await profile.logins.hasSyncedLogins().asyncValue.isSuccess
+            case .autofill:
+                return await withCheckedContinuation { continuation in
+                    profile.autofill.listAllAddresses { _, error in
+                        continuation.resume(returning: error == nil)
+                    }
+                }
+            case .legacyBrowserDB:
+                return await profile.pinnedSites.getPinnedTopSites().asyncValue.isSuccess
+            }
         }
     }
 
-    @Test("Places follows the profile lifecycle")
-    func placesLifecycle() async {
-        await assertLifecycle {
-            $0.places.getRecentBookmarks(limit: 1).value.isSuccess
+    @Test("a store first touched after shutdown stays closed and writes nothing", arguments: Store.allCases)
+    func touchedAfterShutdownStaysClosed(store: Store) async throws {
+        try await withMockProfile { profile in
+            profile.shutdown()
+            let usable = await store.isUsable(in: profile)
+            #expect(!usable)
+            #expect(databaseArtifacts(under: profile.files.rootPath).isEmpty)
         }
     }
 
-    @Test("Tabs follows the profile lifecycle")
-    func tabsLifecycle() async {
-        await assertLifecycle {
-            $0.tabs.getAll().value.isSuccess
+    @Test("a store opens on first use and follows shutdown and reopen", arguments: Store.allCases)
+    func followsLifecycle(store: Store) async throws {
+        try await withMockProfile { profile in
+            let usableOnFirstUse = await store.isUsable(in: profile)
+            #expect(usableOnFirstUse)
+
+            profile.shutdown()
+            let usableAfterShutdown = await store.isUsable(in: profile)
+            #expect(!usableAfterShutdown)
+
+            profile.reopen()
+            let usableAfterReopen = await store.isUsable(in: profile)
+            #expect(usableAfterReopen)
         }
     }
 
-    @Test("Logins follows the profile lifecycle")
-    func loginsLifecycle() async {
-        await assertLifecycle {
-            $0.logins.hasSyncedLogins().value.isSuccess
+    @Test("using Places creates its database")
+    func usingPlacesCreatesDatabase() async throws {
+        try await withMockProfile { profile in
+            _ = profile.places
+            #expect(databaseArtifacts(under: profile.files.rootPath).contains("mock_places.db"))
         }
     }
 
-    @Test("Autofill follows the profile lifecycle")
-    func autofillLifecycle() async {
-        await assertLifecycle(isUsable: Self.autofillIsUsable)
-    }
-
-    @Test("Legacy BrowserDB follows the profile lifecycle")
-    func legacyBrowserDBLifecycle() async {
-        await assertLifecycle {
-            $0.pinnedSites.getPinnedTopSites().value.isSuccess
+    @Test("a scoped profile's directory is removed when the scope ends")
+    func scopedProfileRemovesDirectory() async throws {
+        let root = try await withMockProfile { profile -> String in
+            _ = profile.places
+            #expect(FileManager.default.fileExists(atPath: profile.files.rootPath))
+            return profile.files.rootPath
         }
+        #expect(!FileManager.default.fileExists(atPath: root))
     }
 
-    @Test("Using Places creates its expected database")
-    func usingPlacesCreatesDatabase() {
-        let profile = MockProfile()
-        let root = profile.files.rootPath
-
-        _ = profile.places
-        profile.shutdown()
-
-        #expect(databaseArtifacts(under: root).contains("mock_places.db"))
-    }
-
-    @Test("Releasing a profile removes its directory")
-    func releasingProfileRemovesDirectory() async {
+    @Test("a released profile removes its directory")
+    func releasedProfileRemovesDirectory() async {
         let root = autoreleasepool {
             let profile = MockProfile()
             _ = profile.places
             return profile.files.rootPath
         }
-
-        #expect(await isEventuallyRemoved(root))
-    }
-
-    @Test("Reading List retains the profile directory")
-    func readingListRetainsDirectory() async {
-        await assertStoreRetainsDirectory { $0.readingList }
-    }
-
-    @Test("Places retains the profile directory")
-    func placesRetainsDirectory() async {
-        await assertStoreRetainsDirectory { $0.places }
-    }
-
-    private func assertLifecycle(isUsable: @Sendable (MockProfile) async -> Bool) async {
-        let accessedAfterShutdown = MockProfile()
-        let untouchedRoot = accessedAfterShutdown.files.rootPath
-
-        accessedAfterShutdown.shutdown()
-
-        let openedWhileShutdown = await isUsable(accessedAfterShutdown)
-        #expect(!openedWhileShutdown)
-        #expect(databaseArtifacts(under: untouchedRoot).isEmpty)
-
-        let initializedProfile = MockProfile()
-
-        initializedProfile.reopen()
-
-        let openedAfterReopen = await isUsable(initializedProfile)
-        #expect(openedAfterReopen)
-
-        initializedProfile.shutdown()
-
-        let usableAfterShutdown = await isUsable(initializedProfile)
-        #expect(!usableAfterShutdown)
-
-        initializedProfile.reopen()
-
-        let usableAfterSecondReopen = await isUsable(initializedProfile)
-        #expect(usableAfterSecondReopen)
-    }
-
-    private static func autofillIsUsable(_ profile: MockProfile) async -> Bool {
-        return await withCheckedContinuation { continuation in
-            profile.autofill.listAllAddresses { _, error in
-                continuation.resume(returning: error == nil)
-            }
-        }
-    }
-
-    private func assertStoreRetainsDirectory<Store>(
-        _ makeStore: (MockProfile) -> Store
-    ) async {
-        var retainedStore: Store?
-        let root = autoreleasepool {
-            let profile = MockProfile()
-            retainedStore = makeStore(profile)
-            return profile.files.rootPath
-        }
-
-        withExtendedLifetime(retainedStore) {
-            #expect(FileManager.default.fileExists(atPath: root))
-        }
-
-        retainedStore = nil
-
         #expect(await isEventuallyRemoved(root))
     }
 
@@ -150,5 +103,15 @@ struct MockProfileLifecycleTests {
         return contents.filter {
             $0.hasSuffix(".db") || $0.hasSuffix(".db-wal") || $0.hasSuffix(".db-shm")
         }.sorted()
+    }
+}
+
+private extension Deferred {
+    var asyncValue: T {
+        get async {
+            await withCheckedContinuation { continuation in
+                upon { continuation.resume(returning: $0) }
+            }
+        }
     }
 }

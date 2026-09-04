@@ -6,8 +6,6 @@ import Foundation
 import Common
 
 final class MockNotificationCenter: NotificationProtocol, @unchecked Sendable {
-    private let retainedObject: AnyObject?
-
     var postCalled: (NSNotification.Name) -> Void = { _ in }
     var postCallCount = 0
     var addObserverCallCount = 0
@@ -20,10 +18,6 @@ final class MockNotificationCenter: NotificationProtocol, @unchecked Sendable {
     var saveUserInfo: Any?
 
     weak var notifiableListener: Notifiable?
-
-    init(retaining retainedObject: AnyObject? = nil) {
-        self.retainedObject = retainedObject
-    }
 
     func addObserver(
         _ observer: Any,

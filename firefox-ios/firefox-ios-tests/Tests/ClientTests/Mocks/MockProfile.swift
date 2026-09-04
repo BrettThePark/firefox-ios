@@ -130,6 +130,62 @@ private final class MockProfileFiles: MockFiles {
     }
 }
 
+/// The open/close surface the profile's stores share, so `shutdown` and `reopen`
+/// act on whatever a test actually created.
+protocol LifecycleStore: AnyObject {
+    func reopenIfClosed() -> NSError?
+    func forceClose() -> NSError?
+}
+
+extension RustPlaces: LifecycleStore {}
+extension RustLogins: LifecycleStore {}
+extension RustRemoteTabs: LifecycleStore {}
+extension RustAutofill: LifecycleStore {}
+
+private final class BrowserDBLifecycle: LifecycleStore {
+    private let database: BrowserDB
+
+    init(_ database: BrowserDB) {
+        self.database = database
+    }
+
+    func reopenIfClosed() -> NSError? {
+        database.reopenIfClosed()
+        return nil
+    }
+
+    func forceClose() -> NSError? {
+        database.forceClose()
+        return nil
+    }
+}
+
+/// Runs `body` with a fresh profile, then shuts it down and removes its directory, so
+/// cleanup does not depend on when ARC releases the profile.
+func withMockProfile<T>(
+    databasePrefix: String = "mock",
+    _ body: (MockProfile) async throws -> T
+) async throws -> T {
+    let profile = MockProfile(databasePrefix: databasePrefix)
+    defer {
+        profile.shutdown()
+        try? FileManager.default.removeItem(atPath: profile.files.rootPath)
+    }
+    return try await body(profile)
+}
+
+extension XCTestCase {
+    /// The XCTest form of `withMockProfile`: shutdown and directory removal run in teardown.
+    func makeProfile(databasePrefix: String = "mock") -> MockProfile {
+        let profile = MockProfile(databasePrefix: databasePrefix)
+        addTeardownBlock {
+            profile.shutdown()
+            try? FileManager.default.removeItem(atPath: profile.files.rootPath)
+        }
+        return profile
+    }
+}
+
 // TODO: FXIOS-12610 Profile should be refactored so it is **not** `Sendable`.
 final class MockProfile: Client.Profile, @unchecked Sendable {
     public var rustFxA: RustFirefoxAccounts {
@@ -142,14 +198,15 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
     public let syncManager: ClientSyncManager?
     public let firefoxSuggest: RustFirefoxSuggestProtocol?
     public let remoteSettingsService: RemoteSettingsService
-    public let mockNotificationCenter: NotificationProtocol
+    public let mockNotificationCenter: NotificationProtocol = MockNotificationCenter()
 
     fileprivate let name = "mockaccount"
 
     private let directory: String
     private let databasePrefix: String
     private let injectedPinnedSites: MockablePinnedSites?
-    private var shouldReopenLazyStores = false
+    private let storesLock = NSLock()
+    private var stores: [any LifecycleStore] = []
 
     init(
         databasePrefix: String = "mock",
@@ -157,17 +214,15 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         remoteSettingsService: RemoteSettingsService = RemoteSettingsService(unsafeFromHandle: 0),
         injectedPinnedSites: MockablePinnedSites? = nil
     ) {
-        let profileFiles = MockProfileFiles(rootPath: (MockFiles.testingRoot as NSString)
-            .appendingPathComponent("\(databasePrefix)-\(UUID().uuidString)"))
         // Each profile owns a private subdirectory so its databases cannot be seen or
         // reused by another instance, and so teardown can remove them in one call.
-        files = profileFiles
+        files = MockProfileFiles(rootPath: (MockFiles.testingRoot as NSString)
+            .appendingPathComponent("\(databasePrefix)-\(UUID().uuidString)"))
         syncManager = ClientSyncManagerSpy()
         self.databasePrefix = databasePrefix
         self.firefoxSuggest = firefoxSuggest
         self.remoteSettingsService = remoteSettingsService
         self.injectedPinnedSites = injectedPinnedSites
-        mockNotificationCenter = MockNotificationCenter(retaining: profileFiles)
 
         do {
             directory = try files.getAndEnsureDirectory()
@@ -185,36 +240,43 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         return name
     }
 
-    /// `reopen` and `shutdown` deliberately go through the `_`-prefixed backing storage
-    /// rather than the lazy properties. Referencing a lazy property is what constructs it,
-    /// and `logins` and `places` open (and therefore create) their database file as part of
-    /// construction — so touching them here would make every profile write the databases
-    /// these methods are only meant to close.
     public func reopen() {
         isShutdown = false
-        shouldReopenLazyStores = true
-
-        _database?.reopenIfClosed()
-        _readingListDB?.reopenIfClosed()
-        _ = _logins?.reopenIfClosed()
-        _ = _places?.reopenIfClosed()
-        _ = _tabs?.reopenIfClosed()
-        _ = _autofill?.reopenIfClosed()
+        trackedStores.forEach { _ = $0.reopenIfClosed() }
     }
 
     public func shutdown() {
         isShutdown = true
-        shouldReopenLazyStores = false
-
-        _database?.forceClose()
-        _readingListDB?.forceClose()
-        _ = _logins?.forceClose()
-        _ = _places?.forceClose()
-        _ = _tabs?.forceClose()
-        _ = _autofill?.forceClose()
+        trackedStores.forEach { _ = $0.forceClose() }
     }
 
     public var isShutdown = false
+
+    private var trackedStores: [any LifecycleStore] {
+        storesLock.lock()
+        defer { storesLock.unlock() }
+        return stores
+    }
+
+    /// Registers a store as its lazy property creates it and aligns it with the current
+    /// lifecycle state, so a store first touched after `shutdown()` stays closed and never
+    /// writes its database. `reopen` and `shutdown` only ever see stores a test created.
+    private func track<Store: LifecycleStore>(_ store: Store) -> Store {
+        storesLock.lock()
+        stores.append(store)
+        storesLock.unlock()
+        _ = isShutdown ? store.forceClose() : store.reopenIfClosed()
+        return store
+    }
+
+    private func trackDatabase(_ database: BrowserDB) -> BrowserDB {
+        _ = track(BrowserDBLifecycle(database))
+        return database
+    }
+
+    private func databasePath(_ filename: String) -> String {
+        URL(fileURLWithPath: directory, isDirectory: true).appendingPathComponent(filename).path
+    }
 
     public lazy var queue: TabQueue = {
         return MockTabQueue()
@@ -232,19 +294,7 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         return MockProfilePrefs()
     }()
 
-    private var _autofill: RustAutofill?
-    public lazy var autofill: RustAutofill = {
-        let autofillDbPath = URL(
-            fileURLWithPath: directory,
-            isDirectory: true
-        ).appendingPathComponent("autofill.db").path
-        let autofill = RustAutofill(databasePath: autofillDbPath)
-        _autofill = autofill
-        if shouldReopenLazyStores {
-            _ = autofill.reopenIfClosed()
-        }
-        return autofill
-    }()
+    public lazy var autofill: RustAutofill = track(RustAutofill(databasePath: databasePath("autofill.db")))
 
     public lazy var readingList: ReadingList = {
         return SQLiteReadingList(db: self.readingListDB)
@@ -254,76 +304,26 @@ final class MockProfile: Client.Profile, @unchecked Sendable {
         return ClosedTabsStore(prefs: self.prefs)
     }()
 
-    private var _logins: RustLogins?
-    public lazy var logins: RustLogins = {
-        let newLoginsDatabasePath = URL(
-            fileURLWithPath: directory,
-            isDirectory: true
-        ).appendingPathComponent("\(databasePrefix)_loginsPerField.db").path
+    public lazy var logins: RustLogins = track(
+        RustLogins(databasePath: databasePath("\(databasePrefix)_loginsPerField.db"))
+    )
 
-        let logins = RustLogins(databasePath: newLoginsDatabasePath)
-        _logins = logins
-        if !isShutdown {
-            _ = logins.reopenIfClosed()
-        }
+    lazy var database: BrowserDB = trackDatabase(
+        BrowserDB(filename: "\(databasePrefix).db", schema: BrowserSchema(), files: files)
+    )
 
-        return logins
-    }()
+    lazy var readingListDB: BrowserDB = trackDatabase(
+        BrowserDB(filename: "\(databasePrefix)_ReadingList.db", schema: ReadingListSchema(), files: files)
+    )
 
-    private var _database: BrowserDB?
-    lazy var database: BrowserDB = {
-        let database = BrowserDB(filename: "\(databasePrefix).db", schema: BrowserSchema(), files: files)
-        _database = database
-        if isShutdown {
-            database.forceClose()
-        }
-        return database
-    }()
+    public lazy var places: RustPlaces = track(
+        RustPlaces(databasePath: databasePath("\(databasePrefix)_places.db"),
+                   notificationCenter: mockNotificationCenter)
+    )
 
-    private var _readingListDB: BrowserDB?
-    lazy var readingListDB: BrowserDB = {
-        let database = BrowserDB(
-            filename: "\(databasePrefix)_ReadingList.db",
-            schema: ReadingListSchema(),
-            files: files
-        )
-        _readingListDB = database
-        if isShutdown {
-            database.forceClose()
-        }
-        return database
-    }()
-
-    private var _places: RustPlaces?
-    public lazy var places: RustPlaces = {
-        let placesDatabasePath = URL(
-            fileURLWithPath: directory,
-            isDirectory: true
-        ).appendingPathComponent("\(databasePrefix)_places.db").path
-
-        let places = RustPlaces(databasePath: placesDatabasePath, notificationCenter: mockNotificationCenter)
-        _places = places
-        if !isShutdown {
-            _ = places.reopenIfClosed()
-        }
-
-        return places
-    }()
-
-    private var _tabs: RustRemoteTabs?
-    public lazy var tabs: RustRemoteTabs = {
-        let tabsDbPath = URL(
-            fileURLWithPath: directory,
-            isDirectory: true
-        ).appendingPathComponent("\(databasePrefix)_tabs.db").path
-        let tabs = RustRemoteTabs(databasePath: tabsDbPath)
-        _tabs = tabs
-        if shouldReopenLazyStores {
-            _ = tabs.reopenIfClosed()
-        }
-
-        return tabs
-    }()
+    public lazy var tabs: RustRemoteTabs = track(
+        RustRemoteTabs(databasePath: databasePath("\(databasePrefix)_tabs.db"))
+    )
 
     fileprivate lazy var legacyPlaces: PinnedSites = {
         BrowserDBSQLite(database: self.database, prefs: MockProfilePrefs())
