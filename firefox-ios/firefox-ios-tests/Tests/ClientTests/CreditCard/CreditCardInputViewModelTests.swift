@@ -23,7 +23,7 @@ class CreditCardInputViewModelTests: XCTestCase {
                                                                   ccType: "VISA")
     override func setUp() {
         super.setUp()
-        files = MockFiles()
+        files = makeTemporaryFiles()
         autofill = MockCreditCardProvider()
         profile = MockProfile()
         viewModel = CreditCardInputViewModel(profile: profile, creditCardProvider: autofill)

@@ -23,7 +23,7 @@ final class TabManagerMiddleware: FeatureFlaggable, CanRemoveQuickActionBookmark
     private let summarizerNimbusUtils: SummarizerNimbusUtils
     private let summarizerConfigFactory: SummarizerConfigFactory
     private let tabsPanelTelemetry: TabsPanelTelemetry
-    var bookmarksHandler: BookmarksHandler
+    lazy var bookmarksHandler: BookmarksHandler = profile.places
 
     private var isTabTrayUIExperimentsEnabled: Bool {
         return featureFlagsProvider.isEnabled(.tabTrayUIExperiments)
@@ -50,7 +50,6 @@ final class TabManagerMiddleware: FeatureFlaggable, CanRemoveQuickActionBookmark
         self.summarizerNimbusUtils = summarizerNimbusUtility
         self.summarizerConfigFactory = summarizerConfigFactory
         self.profile = profile
-        self.bookmarksHandler = profile.places
         self.logger = logger
         self.windowManager = windowManager
         self.bookmarksSaver = bookmarksSaver ?? DefaultBookmarksSaver(profile: profile)

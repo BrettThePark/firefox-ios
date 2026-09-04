@@ -117,7 +117,10 @@ class BrowserViewController: UIViewController,
     var downloadToast: DownloadToast? // A toast that is showing the combined download progress
     var downloadProgressManager: DownloadProgressManager?
     let tabsPanelTelemetry: TabsPanelTelemetry
-    let recordVisitManager: RecordVisitObserving
+    private let injectedRecordVisitManager: RecordVisitObserving?
+    // lazily stored to prevent local file system creation if not needed
+    lazy var recordVisitManager: RecordVisitObserving =
+        injectedRecordVisitManager ?? RecordVisitObservationManager(historyHandler: profile.places)
     let relayController: RelayControllerProtocol
 
     private var _downloadLiveActivityWrapper: Any?
@@ -416,7 +419,7 @@ class BrowserViewController: UIViewController,
     let userInitiatedQueue: DispatchQueueInterface
 
     private let bookmarksSaver: BookmarksSaver
-    let bookmarksHandler: BookmarksHandler
+    lazy var bookmarksHandler: BookmarksHandler = profile.places
 
     var newTabSettings: NewTabPage {
         return NewTabAccessors.getNewTabPage(profile.prefs)
@@ -480,11 +483,10 @@ class BrowserViewController: UIViewController,
         self.searchEnginesManager = searchEnginesManager
         self.googleLensTelemetry = GoogleLensTelemetry(gleanWrapper: gleanWrapper)
         self.bookmarksSaver = DefaultBookmarksSaver(profile: profile)
-        self.bookmarksHandler = profile.places
         self.zoomManager = ZoomPageManager(windowUUID: tabManager.windowUUID)
         self.tabsPanelTelemetry = TabsPanelTelemetry(gleanWrapper: gleanWrapper, logger: logger)
         self.userInitiatedQueue = userInitiatedQueue
-        self.recordVisitManager = recordVisitManager ?? RecordVisitObservationManager(historyHandler: profile.places)
+        self.injectedRecordVisitManager = recordVisitManager
         self.relayController = (UIApplication.shared.delegate as? AppDelegate)?.relayController ?? RelayController()
         self.swipeGestureFeatureFlagProvider = SwipeGestureFeatureFlagProvider()
 

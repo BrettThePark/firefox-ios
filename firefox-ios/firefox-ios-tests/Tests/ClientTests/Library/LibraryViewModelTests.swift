@@ -15,7 +15,7 @@ class LibraryViewModelTests: XCTestCase {
         try await super.setUp()
 
         DependencyHelperMock().bootstrapDependencies()
-        profile = MockProfile(databasePrefix: "libraryViewModel_tests")
+        profile = MockProfile()
         profile.reopen()
     }
 

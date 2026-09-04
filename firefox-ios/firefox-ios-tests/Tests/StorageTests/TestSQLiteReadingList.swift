@@ -8,7 +8,7 @@ import Shared
 import XCTest
 
 class TestSQLiteReadingList: XCTestCase {
-    let files = MockFiles()
+    lazy var files = makeTemporaryFiles()
     var db: BrowserDB!
     var readingList: SQLiteReadingList!
 

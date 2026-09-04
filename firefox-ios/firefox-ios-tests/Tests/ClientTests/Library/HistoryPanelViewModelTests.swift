@@ -18,7 +18,7 @@ class HistoryPanelViewModelTests: XCTestCase {
         try await super.setUp()
 
         DependencyHelperMock().bootstrapDependencies()
-        profile = MockProfile(databasePrefix: "HistoryPanelViewModelTest")
+        profile = MockProfile()
         profile.reopen()
     }
 
