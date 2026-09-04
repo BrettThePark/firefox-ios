@@ -14,7 +14,7 @@ class FileAccessorTests: XCTestCase {
 
     override func setUpWithError() throws {
         try super.setUpWithError()
-        files = MockFiles(rootPath: (MockFiles.testingRoot as NSString).appendingPathComponent("filetest"))
+        files = MockFiles()
 
         testDir = try files.getAndEnsureDirectory()
         try files.removeFilesInDirectory()
@@ -91,5 +91,19 @@ class FileAccessorTests: XCTestCase {
             root.pathComponents.starts(with: temporaryDirectory.pathComponents),
             "Test artifacts must be written to the temporary directory"
         )
+    }
+
+    func testMockFilesHaveIsolatedRoots() {
+        XCTAssertNotEqual(MockFiles().rootPath, MockFiles().rootPath)
+    }
+
+    func testOwnedMockFilesCleanUpTheirOriginalRoot() throws {
+        let files = MockFiles(removeRootOnDeinit: true)
+        let originalRoot = try files.getAndEnsureDirectory()
+        files.rootPath = (MockFiles.testingRoot as NSString).appendingPathComponent(UUID().uuidString)
+
+        files.removeRoot()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: originalRoot))
     }
 }
