@@ -32,6 +32,13 @@ class RustLoginsTests: XCTestCase, @unchecked Sendable {
         _ = logins.reopenIfClosed()
     }
 
+    override func tearDown() {
+        _ = logins.forceClose()
+        logins = nil
+        files = nil
+        super.tearDown()
+    }
+
     func testListLogins() {
         let expectation = XCTestExpectation(description: "addLogin")
         logins.addLogin(login: login) { result in

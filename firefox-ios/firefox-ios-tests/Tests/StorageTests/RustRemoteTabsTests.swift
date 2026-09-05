@@ -63,6 +63,12 @@ class RustRemoteTabsTests: XCTestCase {
         _ = mockTabs.reopenIfClosed()
     }
 
+    override func tearDown() {
+        _ = tabs.forceClose()
+        _ = mockTabs.forceClose()
+        super.tearDown()
+    }
+
     func testSetLocalTabs() {
         let url = "https://example.com"
         let title = "example"

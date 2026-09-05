@@ -108,12 +108,12 @@ class FileAccessorTests: XCTestCase {
     }
 
     func testUnownedTemporaryFilesLeaveTheirRootAlone() throws {
-        let files = TemporaryFiles()
-        let directory = files.pathEnsuringRoot(for: "unowned")
-        defer { try? FileManager.default.removeItem(atPath: directory) }
+        let files = TemporaryFiles(ownsRoot: false)
+        let root = try files.getAndEnsureDirectory()
+        defer { try? FileManager.default.removeItem(atPath: root) }
 
         files.removeRoot()
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: directory))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: root))
     }
 }

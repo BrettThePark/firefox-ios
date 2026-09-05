@@ -17,13 +17,11 @@ class SearchBarSettingsViewModelTests: XCTestCase {
         try await super.setUp()
         let profile = makeProfile()
         prefs = profile.prefs
-        prefs.clearAll()
         mockNotificationCenter = MockNotificationCenter()
         DependencyHelperMock().bootstrapDependencies()
     }
 
     override func tearDown() async throws {
-        prefs.clearAll()
         prefs = nil
         mockNotificationCenter = nil
         DependencyHelperMock().reset()

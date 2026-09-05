@@ -42,7 +42,7 @@ struct MockProfileLifecycleTests {
             profile.shutdown()
             let usable = await database.isUsable(in: profile)
             #expect(!usable)
-            #expect(databaseArtifacts(under: profile.files.rootPath).isEmpty)
+            try #expect(databaseArtifacts(under: profile.files.rootPath).isEmpty)
         }
     }
 
@@ -66,7 +66,7 @@ struct MockProfileLifecycleTests {
     func usingPlacesCreatesDatabase() async throws {
         try await withMockProfile { profile in
             _ = profile.places
-            #expect(databaseArtifacts(under: profile.files.rootPath).contains("places.db"))
+            try #expect(databaseArtifacts(under: profile.files.rootPath).contains("places.db"))
         }
     }
 
@@ -98,11 +98,12 @@ struct MockProfileLifecycleTests {
         return !FileManager.default.fileExists(atPath: path)
     }
 
-    private func databaseArtifacts(under root: String) -> [String] {
-        let contents = (try? FileManager.default.contentsOfDirectory(atPath: root)) ?? []
-        return contents.filter {
-            $0.hasSuffix(".db") || $0.hasSuffix(".db-wal") || $0.hasSuffix(".db-shm")
-        }.sorted()
+    /// A missing root means nothing was written; any other listing failure is a real error.
+    private func databaseArtifacts(under root: String) throws -> [String] {
+        guard FileManager.default.fileExists(atPath: root) else { return [] }
+        return try FileManager.default.contentsOfDirectory(atPath: root)
+            .filter { $0.hasSuffix(".db") || $0.hasSuffix(".db-wal") || $0.hasSuffix(".db-shm") }
+            .sorted()
     }
 }
 

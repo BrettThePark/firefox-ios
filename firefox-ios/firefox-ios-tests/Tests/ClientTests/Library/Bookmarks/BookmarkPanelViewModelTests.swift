@@ -514,15 +514,6 @@ final class BookmarksPanelViewModelTests: XCTestCase {
         )
     }
 
-    private func createBookmarksNode(count: Int) -> [FxBookmarkNode] {
-        var nodes = [FxBookmarkNode]()
-        (0..<count).forEach { index in
-            let node = MockBookmarkNode(title: "Bookmark title \(index)")
-            nodes.append(node)
-        }
-        return nodes
-    }
-
     private func createDesktopBookmark(subject: BookmarksPanelViewModel, completion: @escaping @MainActor () -> Void) {
         let expectation = expectation(description: "Subject reloaded")
 

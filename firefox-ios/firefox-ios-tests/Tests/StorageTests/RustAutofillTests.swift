@@ -46,6 +46,11 @@ class RustAutofillTests: XCTestCase {
         _ = autofill.reopenIfClosed()
     }
 
+    override func tearDown() {
+        _ = autofill.forceClose()
+        super.tearDown()
+    }
+
     func addCreditCard() async throws -> CreditCard {
         return try await withCheckedThrowingContinuation { continuation in
             autofill.addCreditCard(creditCard: mockCreditCard) { card, error in

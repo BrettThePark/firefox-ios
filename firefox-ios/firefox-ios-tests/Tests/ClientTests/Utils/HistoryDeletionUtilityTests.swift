@@ -32,14 +32,14 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
     // MARK: - General Tests
     @MainActor
     func testEmptyRead() {
-        let profile = profileSetup()
+        let profile = makeProfile()
 
         assertDBIsEmpty(with: profile)
     }
 
     @MainActor
     func testSingleDataExists() {
-        let profile = profileSetup()
+        let profile = makeProfile()
         let testSites = [SiteElements(domain: "mozilla")]
         populateDBHistory(with: testSites, using: profile)
 
@@ -55,7 +55,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingAllItemsInLastHour() {
-        let profile = profileSetup()
+        let profile = makeProfile()
         guard let thirtyMinutesAgo = Calendar.current.date(byAdding: .minute,
                                                            value: -30,
                                                            to: Date())?.toMicrosecondsSince1970()
@@ -78,7 +78,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingItemsInLastHour_WithFurtherHistory() {
-        let profile = profileSetup()
+        let profile = makeProfile()
         guard let thirtyMinutesAgo = Calendar.current.date(byAdding: .minute,
                                                            value: -30,
                                                            to: Date())?.toMicrosecondsSince1970(),
@@ -104,7 +104,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingAllItemsInHistoryUsingLastTwentyFourHours() {
-        let profile = profileSetup()
+        let profile = makeProfile()
         guard let twelveHoursAgo = Calendar.current.date(
             byAdding: .hour,
             value: -12,
@@ -128,7 +128,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingItemsInHistoryUsingLastTwentyFourHours_WithFurtherHistory() {
-        let profile = profileSetup()
+        let profile = makeProfile()
         guard let twelveHoursAgo = Calendar.current.date(
             byAdding: .hour,
             value: -12,
@@ -288,16 +288,6 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     // MARK: - Helper functions
     @MainActor
-    func profileSetup() -> MockProfile {
-        let profile = MockProfile()
-        trackForMemoryLeaks(profile)
-
-        emptyDB(with: profile)
-
-        return profile
-    }
-
-    @MainActor
     func deletionWithExpectation(
         since dateOption: HistoryDeletionUtilityDateOptions,
         using profile: MockProfile,
@@ -325,34 +315,6 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
         let deletionUtility = HistoryDeletionUtility(with: profile)
         trackForMemoryLeaks(deletionUtility, file: file, line: line)
         deletionUtility.deleteHistoryMetadataOlderThan(dateOption)
-    }
-
-    func emptyDB(
-        with profile: MockProfile,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        XCTAssertTrue(
-            profile.places.deleteHistoryMetadataOlderThan(olderThan: 0).value.isSuccess,
-            file: file,
-            line: line
-        )
-        XCTAssertTrue(
-            profile.places.deleteHistoryMetadataOlderThan(olderThan: INT64_MAX).value.isSuccess,
-            file: file,
-            line: line
-        )
-        XCTAssertTrue(
-            profile.places.deleteHistoryMetadataOlderThan(olderThan: -1).value.isSuccess,
-            file: file,
-            line: line
-        )
-
-        XCTAssertTrue(
-            profile.places.deleteVisitsBetween(Date(timeIntervalSince1970: 0)).value.isSuccess,
-            file: file,
-            line: line
-        )
     }
 
     // `shouldSkipMetadata` is a  parameter to deal with the case where AS doesn't allow
