@@ -34,8 +34,6 @@ class RustLoginsTests: XCTestCase, @unchecked Sendable {
 
     override func tearDown() {
         _ = logins.forceClose()
-        logins = nil
-        files = nil
         super.tearDown()
     }
 

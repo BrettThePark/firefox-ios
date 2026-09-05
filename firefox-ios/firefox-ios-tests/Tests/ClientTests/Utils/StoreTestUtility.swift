@@ -18,30 +18,24 @@ protocol StoreTestUtility {
 class StoreTestUtilityHelper {
     @MainActor
     static func setupStore(with appState: AppState, middlewares: [Middleware<AppState>]) {
-#if TESTING
-        store = Store(
+        replaceStore(Store(
             state: appState,
             reducer: AppState.reducer,
             middlewares: middlewares
-        )
-#endif
+        ))
     }
     @MainActor
     static func setupStore(with mockStore: any DefaultDispatchStore<AppState>) {
-#if TESTING
-        store = mockStore
-#endif
+        replaceStore(mockStore)
     }
 
     /// In order to avoid flaky tests, we should reset the store similar to production
     @MainActor
     static func resetStore() {
-#if TESTING
-        store = Store(
+        replaceStore(Store(
             state: AppState(),
             reducer: AppState.reducer,
             middlewares: []
-        )
-#endif
+        ))
     }
 }

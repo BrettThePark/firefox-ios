@@ -1,5 +1,5 @@
 {
-  "originHash" : "995fcab85cbc15a13d8e2966a58d5715849bd751989063a16ad7f309af14688b",
+  "originHash" : "66cf6218b5a1ef6d34940944a657a46a7a73ad4eac7abd8ac9801868f260c485",
   "pins" : [
     {
       "identity" : "a-star",
@@ -94,7 +94,7 @@
     {
       "identity" : "modifiedcopymacro",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/WilhelmOks/ModifiedCopyMacro.git",
+      "location" : "https://github.com/BrettThePark/ModifiedCopyMacro.git",
       "state" : {
         "revision" : "13dee3de60d4614ac268ec822325a19812e6c6f6",
         "version" : "2.2.0"

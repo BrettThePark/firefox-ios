@@ -104,19 +104,17 @@ let middlewares = [
     WebCompatReporterMiddleware().webCompatReporterProvider
 ]
 
-// In order for us to mock and test the middlewares easier,
-// we change the store to be instantiated as a variable.
-// For non testing builds, we leave the store as a constant.
-#if TESTING
+// `private(set)` keeps app code from reassigning the store. Tests replace it
+// through `replaceStore(_:)`, reached via `@testable import Client`.
 @MainActor
-var store: any DefaultDispatchStore<AppState> = Store(
+private(set) var store: any DefaultDispatchStore<AppState> = Store(
     state: AppState(),
     reducer: AppState.reducer,
     middlewares: AppConstants.isRunningUnitTest ? [] : middlewares
 )
-#else
+
+/// Replaces the global store. Intended for tests only.
 @MainActor
-let store: any DefaultDispatchStore<AppState> = Store(state: AppState(),
-                                                      reducer: AppState.reducer,
-                                                      middlewares: middlewares)
-#endif
+func replaceStore(_ newStore: any DefaultDispatchStore<AppState>) {
+    store = newStore
+}
