@@ -25,7 +25,7 @@ class CreditCardInputViewModelTests: XCTestCase {
         super.setUp()
         files = makeTemporaryFiles()
         autofill = MockCreditCardProvider()
-        profile = MockProfile()
+        profile = makeProfile()
         viewModel = CreditCardInputViewModel(profile: profile, creditCardProvider: autofill)
     }
 

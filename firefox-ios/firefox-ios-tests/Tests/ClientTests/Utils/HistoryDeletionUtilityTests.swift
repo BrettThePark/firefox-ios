@@ -32,14 +32,14 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
     // MARK: - General Tests
     @MainActor
     func testEmptyRead() {
-        let profile = profileSetup(named: "hsd_emptyTest")
+        let profile = profileSetup()
 
         assertDBIsEmpty(with: profile)
     }
 
     @MainActor
     func testSingleDataExists() {
-        let profile = profileSetup(named: "hsd_singleDataExists")
+        let profile = profileSetup()
         let testSites = [SiteElements(domain: "mozilla")]
         populateDBHistory(with: testSites, using: profile)
 
@@ -55,7 +55,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingAllItemsInLastHour() {
-        let profile = profileSetup(named: "hsd_deleteLastHour")
+        let profile = profileSetup()
         guard let thirtyMinutesAgo = Calendar.current.date(byAdding: .minute,
                                                            value: -30,
                                                            to: Date())?.toMicrosecondsSince1970()
@@ -78,7 +78,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingItemsInLastHour_WithFurtherHistory() {
-        let profile = profileSetup(named: "hsd_deleteLastHour_WithFurtherHistory")
+        let profile = profileSetup()
         guard let thirtyMinutesAgo = Calendar.current.date(byAdding: .minute,
                                                            value: -30,
                                                            to: Date())?.toMicrosecondsSince1970(),
@@ -104,7 +104,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingAllItemsInHistoryUsingLastTwentyFourHours() {
-        let profile = profileSetup(named: "hsd_deleteLastTwentyFourHours")
+        let profile = profileSetup()
         guard let twelveHoursAgo = Calendar.current.date(
             byAdding: .hour,
             value: -12,
@@ -128,7 +128,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingItemsInHistoryUsingLastTwentyFourHours_WithFurtherHistory() {
-        let profile = profileSetup(named: "hsd_deleteLastTwentyFourHours_WithFurtherHistory")
+        let profile = profileSetup()
         guard let twelveHoursAgo = Calendar.current.date(
             byAdding: .hour,
             value: -12,
@@ -155,7 +155,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingAllItemsInHistoryUsingLastSevenDays() {
-        let profile = MockProfile(databasePrefix: "hsd_deleteLastSevenDays")
+        let profile = makeProfile()
         guard let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date())?.toMicrosecondsSince1970()
         else {
             XCTFail("Unable to create date")
@@ -177,7 +177,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingItemsInHistoryUsingLastSevenDays_WithFurtherHistory() {
-        let profile = MockProfile(databasePrefix: "hsd_deleteLastSevenDays_WithFurtherHistory")
+        let profile = makeProfile()
         guard let threeDaysAgo = Calendar.current.date(byAdding: .day, value: -3, to: Date())?.toMicrosecondsSince1970(),
               let tenDaysAgo = Calendar.current.date(byAdding: .day,
                                                      value: -10,
@@ -202,7 +202,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingAllItemsInHistoryUsingLastFourWeeks() {
-        let profile = MockProfile(databasePrefix: "hsd_deleteLastFourWeeks")
+        let profile = makeProfile()
         guard let twoWeeksAgo = Calendar.current.date(byAdding: .day, value: -14, to: Date())?.toMicrosecondsSince1970()
         else {
             XCTFail("Unable to create date")
@@ -224,7 +224,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingItemsInHistoryUsingLastFourWeeks_WithFurtherHistory() {
-        let profile = MockProfile(databasePrefix: "hsd_deleteLastFourWeeks_WithFurtherHistory")
+        let profile = makeProfile()
         guard let twoWeeksAgo = Calendar.current.date(byAdding: .day, value: -14, to: Date())?.toMicrosecondsSince1970(),
               let thirtyDaysAgo = Calendar.current.date(byAdding: .day,
                                                         value: -30,
@@ -249,7 +249,7 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     @MainActor
     func testDeletingAllItemsInHistoryUsingAllTime() {
-        let profile = MockProfile(databasePrefix: "hsd_deleteAllTime")
+        let profile = makeProfile()
         guard let earlierToday = Calendar.current.date(byAdding: .hour,
                                                        value: -5,
                                                        to: Date())?.toMicrosecondsSince1970(),
@@ -288,8 +288,8 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
 
     // MARK: - Helper functions
     @MainActor
-    func profileSetup(named dbPrefix: String) -> MockProfile {
-        let profile = MockProfile(databasePrefix: dbPrefix)
+    func profileSetup() -> MockProfile {
+        let profile = MockProfile()
         profile.reopen()
         trackForMemoryLeaks(profile)
 

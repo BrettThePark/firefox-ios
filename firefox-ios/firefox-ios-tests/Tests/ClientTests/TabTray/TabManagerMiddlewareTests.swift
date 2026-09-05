@@ -22,7 +22,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         try await super.setUp()
         DependencyHelperMock().bootstrapDependencies()
         setIsHostedSummaryEnabled(false)
-        mockProfile = MockProfile()
+        mockProfile = makeProfile()
         summarizerConfigFactory = MockSummarizerConfigFactory()
         mockTabManager = MockTabManager()
         mockTabManager.recentlyAccessedNormalTabs = [createTab(profile: mockProfile)]
@@ -360,7 +360,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         let subject = createSubject()
 
         let mockTabManager = mockWindowManager.tabManager(for: .XCTestDefaultUUID) as? MockTabManager
-        let tab = MockTab(profile: MockProfile(databasePrefix: ""), windowUUID: .XCTestDefaultUUID)
+        let tab = MockTab(profile: makeProfile(), windowUUID: .XCTestDefaultUUID)
         tab.webView = MockTabWebView(tab: tab)
         mockTabManager?.selectedTab = tab
         summarizerConfigFactory.returnedConfig = .defaultConfig
@@ -389,7 +389,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         let subject = createSubject()
 
         let mockTabManager = mockWindowManager.tabManager(for: .XCTestDefaultUUID) as? MockTabManager
-        let tab = MockTab(profile: MockProfile(databasePrefix: ""), windowUUID: .XCTestDefaultUUID)
+        let tab = MockTab(profile: makeProfile(), windowUUID: .XCTestDefaultUUID)
         mockTabManager?.selectedTab = tab
 
         mockStore.dispatchCalled = {
@@ -413,7 +413,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         let subject = createSubject()
 
         let mockTabManager = mockWindowManager.tabManager(for: .XCTestDefaultUUID) as? MockTabManager
-        let tab = MockTab(profile: MockProfile(databasePrefix: ""), windowUUID: .XCTestDefaultUUID)
+        let tab = MockTab(profile: makeProfile(), windowUUID: .XCTestDefaultUUID)
         mockTabManager?.selectedTab = tab
 
         mockStore.dispatchCalled = {
@@ -437,7 +437,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         let subject = createSubject()
 
         let mockTabManager = mockWindowManager.tabManager(for: .XCTestDefaultUUID) as? MockTabManager
-        let tab = MockTab(profile: MockProfile(databasePrefix: ""), windowUUID: .XCTestDefaultUUID, isHomePage: true)
+        let tab = MockTab(profile: makeProfile(), windowUUID: .XCTestDefaultUUID, isHomePage: true)
         mockTabManager?.selectedTab = tab
 
         mockStore.dispatchCalled = {
@@ -461,7 +461,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         let subject = createSubject()
 
         let mockTabManager = mockWindowManager.tabManager(for: .XCTestDefaultUUID) as? MockTabManager
-        let tab = MockTab(profile: MockProfile(databasePrefix: ""), windowUUID: .XCTestDefaultUUID)
+        let tab = MockTab(profile: makeProfile(), windowUUID: .XCTestDefaultUUID)
         mockTabManager?.selectedTab = tab
 
         mockStore.dispatchCalled = {
@@ -486,7 +486,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         let subject = createSubject()
 
         let mockTabManager = mockWindowManager.tabManager(for: .XCTestDefaultUUID) as? MockTabManager
-        let tab = MockTab(profile: MockProfile(databasePrefix: ""), windowUUID: .XCTestDefaultUUID)
+        let tab = MockTab(profile: makeProfile(), windowUUID: .XCTestDefaultUUID)
         tab.overrideReaderModeState = .active
         mockTabManager?.selectedTab = tab
 
@@ -511,7 +511,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         let subject = createSubject()
         let expectation = XCTestExpectation(description: "Main Menu tab info with account data is dispatched.")
         let tabManager = mockWindowManager.tabManager(for: .XCTestDefaultUUID) as? MockTabManager
-        tabManager?.selectedTab = MockTab(profile: MockProfile(), windowUUID: .XCTestDefaultUUID)
+        tabManager?.selectedTab = MockTab(profile: makeProfile(), windowUUID: .XCTestDefaultUUID)
 
         mockStore.dispatchCalled = { expectation.fulfill() }
 

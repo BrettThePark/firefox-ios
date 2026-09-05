@@ -19,13 +19,10 @@ class TestHistory: XCTestCase {
         continueAfterFailure = false
 
         // Setup mock profile
-        profile = MockProfile()
-        profile.reopen()
+        profile = makeProfile()
     }
 
     override func tearDown() async throws {
-        self.clear(profile.places)
-        profile.shutdown()
         profile = nil
         try await super.tearDown()
     }

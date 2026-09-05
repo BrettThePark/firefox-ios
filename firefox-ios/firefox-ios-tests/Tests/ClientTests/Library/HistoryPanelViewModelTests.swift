@@ -18,14 +18,11 @@ class HistoryPanelViewModelTests: XCTestCase {
         try await super.setUp()
 
         DependencyHelperMock().bootstrapDependencies()
-        profile = MockProfile()
-        profile.reopen()
+        profile = makeProfile()
     }
 
     override func tearDown() async throws {
         DependencyHelperMock().reset()
-        clear(profile: profile)
-        profile.shutdown()
         profile = nil
         try await super.tearDown()
     }
@@ -187,6 +184,14 @@ class HistoryPanelViewModelTests: XCTestCase {
         }
     }
 
+    func testDeleteEverythingHistory() {
+        let subject = createSubject()
+        setupSiteVisits()
+
+        let result = profile.places.deleteEverythingHistory()
+        XCTAssertTrue(result.value.isSuccess, "History cleared.")
+    }
+    
     // MARK: - Setup
     private func createSubject() -> HistoryPanelViewModel {
         let subject = HistoryPanelViewModel(profile: profile)
@@ -209,13 +214,6 @@ class HistoryPanelViewModelTests: XCTestCase {
         let result = profile.places.applyObservation(visitObservation: visitObservation)
 
         XCTAssertEqual(true, result.value.isSuccess, "Site added: \(url).", file: file, line: line)
-    }
-
-    private func clear(profile: MockProfile,
-                       file: StaticString = #filePath,
-                       line: UInt = #line) {
-        let result = profile.places.deleteEverythingHistory()
-        XCTAssertTrue(result.value.isSuccess, "History cleared.", file: file, line: line)
     }
 
     private func fetchHistory(from subject: HistoryPanelViewModel,

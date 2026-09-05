@@ -15,13 +15,11 @@ class LibraryViewModelTests: XCTestCase {
         try await super.setUp()
 
         DependencyHelperMock().bootstrapDependencies()
-        profile = MockProfile()
-        profile.reopen()
+        profile = makeProfile()
     }
 
     override func tearDown() async throws {
         DependencyHelperMock().reset()
-        profile.shutdown()
         profile = nil
         try await super.tearDown()
     }
