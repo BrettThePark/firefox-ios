@@ -290,7 +290,6 @@ class HistoryDeletionUtilityTests: XCTestCase, @unchecked Sendable {
     @MainActor
     func profileSetup() -> MockProfile {
         let profile = MockProfile()
-        profile.reopen()
         trackForMemoryLeaks(profile)
 
         emptyDB(with: profile)

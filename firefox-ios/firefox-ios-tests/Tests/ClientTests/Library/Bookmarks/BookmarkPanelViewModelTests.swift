@@ -60,7 +60,6 @@ final class BookmarksPanelViewModelTests: XCTestCase {
     }
 
     func testShouldReload_whenMobileEmptyBookmarks() throws {
-        profile.reopen()
         let subject = createSubject(guid: BookmarkRoots.MobileFolderGUID)
         let expectation = expectation(description: "Subject reloaded")
         subject.reloadData {
@@ -72,7 +71,6 @@ final class BookmarksPanelViewModelTests: XCTestCase {
     }
 
     func testShouldReload_whenLocalDesktopFolder() {
-        profile.reopen()
         let subject = createSubject(guid: LocalDesktopFolder.localDesktopFolderGuid)
         let expectation = expectation(description: "Subject reloaded")
         subject.reloadData {

@@ -405,7 +405,6 @@ struct TestHistoryHelper {
         bool: Bool = true,
         visitType: VisitType = .link
     ) {
-        _ = places.reopenIfClosed()
         let site = Site.createBasicSite(url: url, title: title)
         let visit = VisitObservation(url: site.url, title: site.title, visitType: visitType)
         let res = places.applyObservation(visitObservation: visit).value
