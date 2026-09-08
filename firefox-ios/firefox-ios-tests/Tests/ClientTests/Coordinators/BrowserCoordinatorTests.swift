@@ -450,14 +450,26 @@ final class BrowserCoordinatorTests: XCTestCase,
     }
 
     func testShowGoogleLensCamera_whenCameraUnavailable_doesNotPresentOrLeaveChild() {
-        // The simulator has no camera, so the coordinator finishes immediately and cleans
-        // itself up without presenting anything.
-        let subject = createSubject()
+        // Availability is injected rather than read from the simulator, which reports a camera
+        // on iOS 26 but not on earlier runtimes.
+        let subject = createSubject(cameraAvailability: { false })
 
         subject.showGoogleLensCamera()
 
         XCTAssertTrue(subject.childCoordinators.isEmpty)
         XCTAssertEqual(mockRouter.presentCalled, 0)
+    }
+
+    func testShowGoogleLensCamera_consultsCameraAvailability() {
+        var availabilityCallCount = 0
+        let subject = createSubject(cameraAvailability: {
+            availabilityCallCount += 1
+            return false
+        })
+
+        subject.showGoogleLensCamera()
+
+        XCTAssertEqual(availabilityCallCount, 1)
     }
 
     func testShowGoogleLensCamera_whenCameraCoordinatorAlreadyPresent_doesNotAddDuplicate() {
@@ -1691,6 +1703,7 @@ final class BrowserCoordinatorTests: XCTestCase,
 
     // MARK: - Helpers
     private func createSubject(googleLensService: GoogleLensServicing = GoogleLensService(),
+                               cameraAvailability: @escaping @MainActor () -> Bool = { true },
                                file: StaticString = #filePath,
                                line: UInt = #line) -> BrowserCoordinator {
         let subject = BrowserCoordinator(router: mockRouter,
@@ -1700,7 +1713,8 @@ final class BrowserCoordinatorTests: XCTestCase,
                                          profile: profile,
                                          glean: glean,
                                          applicationHelper: applicationHelper,
-                                         googleLensService: googleLensService)
+                                         googleLensService: googleLensService,
+                                         cameraAvailability: cameraAvailability)
         trackForMemoryLeaks(subject, file: file, line: line)
         return subject
     }

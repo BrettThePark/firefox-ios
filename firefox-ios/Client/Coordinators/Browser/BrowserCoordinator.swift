@@ -64,6 +64,9 @@ final class BrowserCoordinator: BaseCoordinator,
     private var windowUUID: WindowUUID { return tabManager.windowUUID }
     private let googleLensService: GoogleLensServicing
     private lazy var trackerBlockerTelemetry = TrackerBlockerTelemetry(gleanWrapper: glean)
+    /// Reports whether the device can capture from the camera. Injected because simulators report
+    /// this inconsistently across iOS versions.
+    private let cameraAvailability: @MainActor () -> Bool
     private var isSummarizerOn: Bool {
         return summarizerNimbusUtils.isSummarizeFeatureToggledOn
     }
@@ -80,7 +83,10 @@ final class BrowserCoordinator: BaseCoordinator,
          summarizerNimbusUtils: SummarizerNimbusUtils = DefaultSummarizerNimbusUtils(),
          glean: GleanWrapper = DefaultGleanWrapper(),
          applicationHelper: ApplicationHelper = DefaultApplicationHelper(),
-         googleLensService: GoogleLensServicing = GoogleLensService()) {
+         googleLensService: GoogleLensServicing = GoogleLensService(),
+         cameraAvailability: @escaping @MainActor () -> Bool = {
+             UIImagePickerController.isSourceTypeAvailable(.camera)
+         }) {
         self.summarizerNimbusUtils = summarizerNimbusUtils
         self.screenshotService = screenshotService
         self.profile = profile
@@ -95,6 +101,7 @@ final class BrowserCoordinator: BaseCoordinator,
         self.applicationHelper = applicationHelper
         self.glean = glean
         self.googleLensService = googleLensService
+        self.cameraAvailability = cameraAvailability
         super.init(router: router)
 
         browserViewController.browserDelegate = self
@@ -1206,6 +1213,7 @@ final class BrowserCoordinator: BaseCoordinator,
         let coordinator = CameraCoordinator(
             parentCoordinatorDelegate: self,
             router: router,
+            isCameraAvailable: cameraAvailability(),
             cameraReason: .googleLens
         ) { [weak self] image in
             guard let image else { return }
