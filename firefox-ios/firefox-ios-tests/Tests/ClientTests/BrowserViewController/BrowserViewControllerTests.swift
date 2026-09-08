@@ -45,6 +45,13 @@ class BrowserViewControllerTests: XCTestCase, StoreTestUtility {
         try await super.tearDown()
     }
 
+    func testInit_doesNotOpenPlacesDatabase() {
+        _ = createSubject()
+
+        XCTAssertFalse(profile.hasCreatedPlacesDatabase,
+                       "Creating the view controller should not open the Places store")
+    }
+
     func testTrackVisibleSuggestion() {
         TelemetryContextualIdentifier.setupContextId()
         let subject = createSubject()

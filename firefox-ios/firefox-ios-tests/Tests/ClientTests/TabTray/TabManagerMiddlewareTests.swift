@@ -47,6 +47,13 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility {
         try await super.tearDown()
     }
 
+    func test_init_doesNotOpenPlacesDatabase() {
+        _ = createSubject()
+
+        XCTAssertFalse(mockProfile.hasCreatedPlacesDatabase,
+                       "Creating the middleware should not open the Places store")
+    }
+
     func test_screenshotAction_triggersRefresh() throws {
         let subject = createSubject()
         let action = ScreenshotAction(
