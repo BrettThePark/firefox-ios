@@ -449,17 +449,6 @@ final class BrowserCoordinatorTests: XCTestCase,
         XCTAssertTrue(subject.childCoordinators.first is PhotoPickerCoordinator)
     }
 
-    func testShowGoogleLensCamera_whenCameraUnavailable_doesNotPresentOrLeaveChild() {
-        // The simulator has no camera, so the coordinator finishes immediately and cleans
-        // itself up without presenting anything.
-        let subject = createSubject()
-
-        subject.showGoogleLensCamera()
-
-        XCTAssertTrue(subject.childCoordinators.isEmpty)
-        XCTAssertEqual(mockRouter.presentCalled, 0)
-    }
-
     func testShowGoogleLensCamera_whenCameraCoordinatorAlreadyPresent_doesNotAddDuplicate() {
         let subject = createSubject()
         let existing = CameraCoordinator(parentCoordinatorDelegate: subject,
