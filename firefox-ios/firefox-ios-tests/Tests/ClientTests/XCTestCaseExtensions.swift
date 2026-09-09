@@ -42,3 +42,18 @@ extension XCTestCase {
         DependencyHelperMock().reset()
     }
 }
+
+/// Bootstraps the container once per test process, before any test runs, so no test
+/// depends on an earlier one having done it.
+@objc(ClientTestsPrincipal)
+final class ClientTestsPrincipal: NSObject {
+    override init() {
+        super.init()
+        MainActor.assumeIsolated {
+            DependencyHelperMock().bootstrapDependencies()
+            // Nimbus is built once per process from whichever Profile is registered when it is
+            // first touched. Build it here so it never gets a test's MockProfile (no Rust handle).
+            _ = Experiments.shared
+        }
+    }
+}

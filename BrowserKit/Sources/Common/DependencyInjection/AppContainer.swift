@@ -13,7 +13,25 @@ public final class AppContainer: ServiceProvider {
     nonisolated(unsafe) public static let shared: ServiceProvider = AppContainer()
 
     /// The item holding registered services.
-    private var container = DependencyContainer()
+    private var unsafeContainer = DependencyContainer()
+
+    /// `rebuild` swaps `unsafeContainer` while other threads may be resolving; unguarded, a reader
+    /// could load the old reference just as the swap releases it.
+    private let containerLock = NSLock()
+
+    /// Callers use the returned container outside the lock, so a nested resolve cannot deadlock on it.
+    private var container: DependencyContainer {
+        get {
+            containerLock.lock()
+            defer { containerLock.unlock() }
+            return unsafeContainer
+        }
+        set {
+            containerLock.lock()
+            defer { containerLock.unlock() }
+            unsafeContainer = newValue
+        }
+    }
 
     /// Any services needed by the client can be resolved by calling this.
     public func resolve<T>() -> T {
@@ -54,5 +72,12 @@ public final class AppContainer: ServiceProvider {
 
     public func reset() {
         container.reset()
+    }
+
+    public func rebuild(_ configure: (ServiceProvider) -> Void) {
+        let staging = AppContainer()
+        configure(staging)
+        staging.bootstrap()
+        container = staging.container
     }
 }

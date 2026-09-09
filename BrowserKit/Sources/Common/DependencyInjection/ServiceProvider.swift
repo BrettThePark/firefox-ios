@@ -22,4 +22,7 @@ public protocol ServiceProvider {
     func register<T>(service: T)
     func bootstrap()
     func reset()
+
+    /// Registers and bootstraps a new container, then swaps it in, so concurrent resolves never see it empty.
+    func rebuild(_ configure: (ServiceProvider) -> Void)
 }

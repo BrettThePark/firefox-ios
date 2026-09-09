@@ -12,12 +12,14 @@ final class BlockedTrackersLearnMoreViewControllerTests: XCTestCase {
 
     override func setUp() async throws {
         try await super.setUp()
-        AppContainer.shared.register(service: DefaultThemeManager(sharedContainerIdentifier: "") as ThemeManager)
+        DependencyHelperMock().bootstrapDependencies(
+            injectedThemeManager: DefaultThemeManager(sharedContainerIdentifier: "")
+        )
     }
 
     override func tearDown() async throws {
         url = nil
-        AppContainer.shared.reset()
+        DependencyHelperMock().reset()
         try await super.tearDown()
     }
 

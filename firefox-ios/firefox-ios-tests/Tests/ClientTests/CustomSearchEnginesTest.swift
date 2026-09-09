@@ -15,7 +15,7 @@ class CustomSearchEnginesTest: XCTestCase {
     }
 
     override func tearDown() async throws {
-        AppContainer.shared.reset()
+        DependencyHelperMock().reset()
         try await super.tearDown()
     }
 

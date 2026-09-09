@@ -16,8 +16,8 @@ class AccessoryViewProviderTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        DependencyHelperMock().reset()
         try await super.tearDown()
-        AppContainer.shared.reset()
     }
 
     func testReloadForStandardView_showsNoAutofillButton() {
