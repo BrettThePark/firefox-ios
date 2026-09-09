@@ -30,8 +30,13 @@ final class BrowsingSettingsViewControllerTests: XCTestCase {
         try await super.tearDown()
     }
 
-    func testHomePageSettingsLeaks_InitCall() throws {
+    func testBrowsingSettingsLeaks() throws {
         let subject = createSubject()
+        // viewWillAppear is what fills `settings`, and the settings are what would close a
+        // retain cycle. Without this the check passes whether the screen leaks or not.
+        subject.loadViewIfNeeded()
+        subject.viewWillAppear(false)
+
         trackForMemoryLeaks(subject)
     }
 

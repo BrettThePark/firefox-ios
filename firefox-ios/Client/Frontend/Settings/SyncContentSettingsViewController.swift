@@ -68,7 +68,7 @@ final class ManageFxAccountSetting: Setting {
 }
 
 class DisconnectSetting: Setting {
-    let settingsVC: SettingsTableViewController
+    weak var settingsVC: SettingsTableViewController?
     let profile: Profile?
     override var accessoryType: UITableViewCell.AccessoryType { return .none }
 
@@ -102,7 +102,7 @@ class DisconnectSetting: Setting {
                 if let navigationController = navigationController, navigationController.viewControllers.count > 1 {
                     _ = navigationController.popViewController(animated: true)
                 } else {
-                    self.settingsVC.dismiss(animated: true, completion: nil)
+                    self.settingsVC?.dismiss(animated: true, completion: nil)
                 }
             }
         )

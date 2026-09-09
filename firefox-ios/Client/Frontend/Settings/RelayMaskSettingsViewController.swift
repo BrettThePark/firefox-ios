@@ -97,7 +97,6 @@ class RelayMaskSettingsViewController: SettingsTableViewController {
 
 final class ManageRelayMasksSetting: Setting {
     private let windowUUID: WindowUUID
-    private let parentNav: UINavigationController?
     private let tabManager: TabManager
     private let relayController: RelayControllerProtocol
     private(set) var manageMasksURL: URL?
@@ -108,7 +107,6 @@ final class ManageRelayMasksSetting: Setting {
          tabManager: TabManager,
          relayController: RelayControllerProtocol,
          navigationController: UINavigationController?) {
-        self.parentNav = navigationController
         self.windowUUID = windowUUID
         self.tabManager = tabManager
         self.relayController = relayController

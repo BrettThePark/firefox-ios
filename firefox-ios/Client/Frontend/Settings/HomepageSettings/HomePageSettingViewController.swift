@@ -87,8 +87,8 @@ class HomePageSettingViewController: SettingsTableViewController,
         self.currentNewTabChoice = NewTabAccessors.getHomePage(self.prefs)
         self.hasHomePage = HomeButtonHomePageAccessors.getHomePage(self.prefs) != nil
 
-        let onFinished = {
-            guard let currentNewTabChoice = self.currentNewTabChoice else { return }
+        let onFinished = { [weak self] in
+            guard let self, let currentNewTabChoice = self.currentNewTabChoice else { return }
             self.prefs.setString(currentNewTabChoice.rawValue, forKey: NewTabAccessors.HomePrefKey)
             self.tableView.reloadData()
         }
@@ -97,9 +97,9 @@ class HomePageSettingViewController: SettingsTableViewController,
             title: NSAttributedString(string: .SettingsNewTabTopSites),
             subtitle: nil,
             accessibilityIdentifier: "HomeAsFirefoxHome",
-            isChecked: { return self.currentNewTabChoice == NewTabPage.topSites },
-            onChecked: {
-                self.currentNewTabChoice = NewTabPage.topSites
+            isChecked: { [weak self] in self?.currentNewTabChoice == NewTabPage.topSites },
+            onChecked: { [weak self] in
+                self?.currentNewTabChoice = NewTabPage.topSites
                 onFinished()
             })
 
@@ -110,8 +110,8 @@ class HomePageSettingViewController: SettingsTableViewController,
             placeholder: .CustomNewPageURL,
             accessibilityIdentifier: "HomeAsCustomURL",
             isChecked: { return !showTopSites.isChecked() },
-            settingDidChange: { (string) in
-                self.currentNewTabChoice = NewTabPage.homePage
+            settingDidChange: { [weak self] (string) in
+                self?.currentNewTabChoice = NewTabPage.homePage
                 onFinished()
             })
 
@@ -138,7 +138,8 @@ class HomePageSettingViewController: SettingsTableViewController,
                 prefKey: PrefsKeys.HomepageSettings.JumpBackInSection,
                 defaultValue: userPreferences.getPreferenceFor(.homepageJumpBackinSectionDefault),
                 titleText: .Settings.Homepage.CustomizeFirefoxHome.JumpBackIn
-            ) { value in
+            ) { [weak self] value in
+                guard let self else { return }
                 store.dispatch(
                     JumpBackInAction(
                         isEnabled: value,
@@ -156,7 +157,8 @@ class HomePageSettingViewController: SettingsTableViewController,
                     prefKey: PrefsKeys.HomepageSettings.TrackerBlockerSection,
                     defaultValue: userPreferences.getPreferenceFor(.homepageTrackerBlockerModule),
                     titleText: .Settings.Homepage.CustomizeFirefoxHome.PrivacyReport
-                ) { value in
+                ) { [weak self] value in
+                    guard let self else { return }
                     store.dispatch(
                         TrackerBlockerModuleAction(
                             isEnabled: value,
@@ -174,7 +176,8 @@ class HomePageSettingViewController: SettingsTableViewController,
                 prefKey: PrefsKeys.HomepageSettings.BookmarksSection,
                 defaultValue: userPreferences.getPreferenceFor(.homepageBookmarksSectionDefault),
                 titleText: .Settings.Homepage.CustomizeFirefoxHome.Bookmarks
-            ) { value in
+            ) { [weak self] value in
+                guard let self else { return }
                 store.dispatch(
                     BookmarksAction(
                         isEnabled: value,
@@ -194,7 +197,8 @@ class HomePageSettingViewController: SettingsTableViewController,
                 prefKey: PrefsKeys.UserFeatureFlagPrefs.ASPocketStories,
                 defaultValue: true,
                 titleText: .Settings.Homepage.CustomizeFirefoxHome.Stories
-            ) { value in
+            ) { [weak self] value in
+                guard let self else { return }
                 store.dispatch(
                     MerinoAction(
                         isEnabled: value,
@@ -250,8 +254,9 @@ class HomePageSettingViewController: SettingsTableViewController,
             title: NSAttributedString(string: .Settings.Homepage.StartAtHome.AfterFourHours),
             subtitle: nil,
             accessibilityIdentifier: a11y.afterFourHours,
-            isChecked: { return self.currentStartAtHomeSetting == .afterFourHours },
-            onChecked: {
+            isChecked: { [weak self] in self?.currentStartAtHomeSetting == .afterFourHours },
+            onChecked: { [weak self] in
+                guard let self else { return }
                 let previousOption = self.currentStartAtHomeSetting
                 self.currentStartAtHomeSetting = .afterFourHours
                 onOptionSelected(true, .afterFourHours, previousOption)
@@ -261,8 +266,9 @@ class HomePageSettingViewController: SettingsTableViewController,
             title: NSAttributedString(string: .Settings.Homepage.StartAtHome.Always),
             subtitle: nil,
             accessibilityIdentifier: a11y.always,
-            isChecked: { return self.currentStartAtHomeSetting == .always },
-            onChecked: {
+            isChecked: { [weak self] in self?.currentStartAtHomeSetting == .always },
+            onChecked: { [weak self] in
+                guard let self else { return }
                 let previousOption = self.currentStartAtHomeSetting
                 self.currentStartAtHomeSetting = .always
                 onOptionSelected(true, .always, previousOption)
@@ -272,8 +278,9 @@ class HomePageSettingViewController: SettingsTableViewController,
             title: NSAttributedString(string: .Settings.Homepage.StartAtHome.Never),
             subtitle: nil,
             accessibilityIdentifier: a11y.disabled,
-            isChecked: { return self.currentStartAtHomeSetting == .disabled },
-            onChecked: {
+            isChecked: { [weak self] in self?.currentStartAtHomeSetting == .disabled },
+            onChecked: { [weak self] in
+                guard let self else { return }
                 let previousOption = self.currentStartAtHomeSetting
                 self.currentStartAtHomeSetting = .disabled
                 onOptionSelected(false, .disabled, previousOption)
@@ -328,7 +335,7 @@ extension HomePageSettingViewController {
 // MARK: - WallpaperSettings
 extension HomePageSettingViewController {
     class WallpaperSettings: Setting {
-        var settings: SettingsTableViewController
+        weak var settings: SettingsTableViewController?
         var tabManager: TabManager
         var wallpaperManager: WallpaperManagerInterface
         weak var settingsDelegate: SettingsDelegate?
@@ -352,7 +359,7 @@ extension HomePageSettingViewController {
         }
 
         override func onClick(_ navigationController: UINavigationController?) {
-            guard wallpaperManager.canSettingsBeShown else { return }
+            guard wallpaperManager.canSettingsBeShown, let settings else { return }
 
             let theme = settings.themeManager.getCurrentTheme(for: settings.windowUUID)
             let viewModel = WallpaperSettingsViewModel(

@@ -28,11 +28,11 @@ class TopSitesRowCountSettingsController: SettingsTableViewController, FeatureFl
         let createSetting: (Int32) -> CheckmarkSetting = { num in
             return CheckmarkSetting(title: NSAttributedString(string: "\(num)"),
                                     subtitle: nil,
-                                    isChecked: {
-                return num == self.numberOfRows
+                                    isChecked: { [weak self] in
+                return num == self?.numberOfRows
             },
-                                    onChecked: {
-                guard self.numberOfRows != num else { return }
+                                    onChecked: { [weak self] in
+                guard let self, self.numberOfRows != num else { return }
                 self.numberOfRows = num
                 self.prefs.setInt(Int32(num), forKey: PrefsKeys.NumberOfTopSiteRows)
                 self.tableView.reloadData()

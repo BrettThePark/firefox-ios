@@ -68,10 +68,11 @@ class ContentBlockerSettingViewController: SettingsTableViewController {
                 style: .leftSide,
                 subtitle: NSAttributedString(string: option.settingSubtitle),
                 accessibilityIdentifier: id,
-                isChecked: {
-                    return option == self.currentBlockingStrength
+                isChecked: { [weak self] in
+                    return option == self?.currentBlockingStrength
                 },
-                onChecked: {
+                onChecked: { [weak self] in
+                    guard let self else { return }
                     let previousOption = self.currentBlockingStrength
 
                     self.currentBlockingStrength = option
@@ -84,10 +85,10 @@ class ContentBlockerSettingViewController: SettingsTableViewController {
                 })
 
             let uuid = windowUUID
-            setting.onAccessoryButtonTapped = {
+            setting.onAccessoryButtonTapped = { [weak self] in
                 let vc = TPAccessoryInfo(windowUUID: uuid)
                 vc.isStrictMode = option == .strict
-                self.navigationController?.pushViewController(vc, animated: true)
+                self?.navigationController?.pushViewController(vc, animated: true)
             }
 
             if self.prefs.boolForKey(ContentBlockingConfig.Prefs.EnabledKey) == false {

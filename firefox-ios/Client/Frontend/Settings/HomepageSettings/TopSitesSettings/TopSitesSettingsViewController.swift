@@ -38,7 +38,8 @@ final class TopSitesSettingsViewController: SettingsTableViewController, UserFea
                     prefKey: PrefsKeys.UserFeatureFlagPrefs.TopSiteSection,
                     defaultValue: true,
                     titleText: .Settings.Homepage.Shortcuts.ShortcutsToggle
-                ) { isOn in
+                ) { [weak self] isOn in
+                    guard let self else { return }
                     store.dispatch(
                         TopSitesAction(
                             isEnabled: isOn,
@@ -53,7 +54,8 @@ final class TopSitesSettingsViewController: SettingsTableViewController, UserFea
                     prefKey: PrefsKeys.FeatureFlags.SponsoredShortcuts,
                     defaultValue: userPreferences.getPreferenceFor(.hntSponsoredShortcuts),
                     titleText: .Settings.Homepage.Shortcuts.SponsoredShortcutsToggle
-                ) { _ in
+                ) { [weak self] _ in
+                    guard let self else { return }
                     store.dispatch(
                         TopSitesAction(
                             windowUUID: self.windowUUID,

@@ -26,8 +26,8 @@ class NewTabContentSettingsViewController: SettingsTableViewController {
         self.currentChoice = NewTabAccessors.getNewTabPage(self.prefs)
         self.hasHomePage = NewTabHomePageAccessors.getHomePage(self.prefs) != nil
 
-        let onFinished = {
-            guard let currentChoice = self.currentChoice else { return }
+        let onFinished = { [weak self] in
+            guard let self, let currentChoice = self.currentChoice else { return }
             self.prefs.setString(currentChoice.rawValue, forKey: NewTabAccessors.NewTabPrefKey)
             self.tableView.reloadData()
         }
@@ -36,9 +36,9 @@ class NewTabContentSettingsViewController: SettingsTableViewController {
             title: NSAttributedString(string: .SettingsNewTabTopSites),
             subtitle: nil,
             accessibilityIdentifier: "NewTabAsFirefoxHome",
-            isChecked: { return self.currentChoice == NewTabPage.topSites },
-            onChecked: {
-                self.currentChoice = NewTabPage.topSites
+            isChecked: { [weak self] in self?.currentChoice == NewTabPage.topSites },
+            onChecked: { [weak self] in
+                self?.currentChoice = NewTabPage.topSites
                 onFinished()
             }
         )
@@ -47,9 +47,9 @@ class NewTabContentSettingsViewController: SettingsTableViewController {
             title: NSAttributedString(string: .SettingsNewTabBlankPage),
             subtitle: nil,
             accessibilityIdentifier: "NewTabAsBlankPage",
-            isChecked: { return self.currentChoice == NewTabPage.blankPage },
-            onChecked: {
-                self.currentChoice = NewTabPage.blankPage
+            isChecked: { [weak self] in self?.currentChoice == NewTabPage.blankPage },
+            onChecked: { [weak self] in
+                self?.currentChoice = NewTabPage.blankPage
                 onFinished()
             }
         )
@@ -61,8 +61,8 @@ class NewTabContentSettingsViewController: SettingsTableViewController {
             placeholder: .CustomNewPageURL,
             accessibilityIdentifier: "NewTabAsCustomURL",
             isChecked: { return !showTopSites.isChecked() && !showBlankPage.isChecked() },
-            settingDidChange: { (string) in
-                self.currentChoice = NewTabPage.homePage
+            settingDidChange: { [weak self] (string) in
+                self?.currentChoice = NewTabPage.homePage
                 onFinished()
             }
         )

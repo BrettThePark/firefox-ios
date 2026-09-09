@@ -43,6 +43,13 @@ final class HomePageSettingViewControllerTests: XCTestCase {
 
     func testHomePageSettingsLeaks_InitCall() throws {
         let subject = createSubject()
+        // The profile has to be set and viewWillAppear has to run, or `settings` is never filled
+        // and half of generateSettings() is skipped: customizeFirefoxSettingSection builds its
+        // settings inside `if let profile`. Without both, this passes against a leaking screen.
+        subject.profile = profile
+        subject.loadViewIfNeeded()
+        subject.viewWillAppear(false)
+
         trackForMemoryLeaks(subject)
     }
 
