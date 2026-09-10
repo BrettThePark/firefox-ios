@@ -170,13 +170,13 @@
 "Settings.Autoplay.SettingsTitle.v137" = "Reprodução automática";
 
 /* Description text for the Ad Blocker toggle in the Browsing settings page, explaining its purpose and a tip for troubleshooting broken sites. */
-"Settings.Browsing.AdBlocker.Description.v155" = "Reduz anúncios e trackers relacionados com anúncios. Se um site parecer com problemas, tente desativar esta opção.";
+"Settings.Browsing.AdBlocker.Description.v155" = "Reduz anúncios e rastreadores relacionados com anúncios. Se um site parecer com problemas, tente desativar esta opção.";
 
 /* Link text below the Ad Blocker toggle description that opens a support page with more information. */
 "Settings.Browsing.AdBlocker.LearnMore.v155" = "Saber mais";
 
 /* Title for the Ad Blocker toggle in the Browsing settings page. */
-"Settings.Browsing.AdBlocker.Title.v155" = "Bloqueador de anúncios";
+"Settings.Browsing.AdBlocker.Title.v155" = "Bloqueador de Anúncios";
 
 /* Title for the Block Ads toggle in the Browsing settings page. When enabled, the app blocks advertisements. */
 "Settings.Browsing.BlockAds.Title.v153" = "Bloquear anúncios";
@@ -216,6 +216,9 @@
 
 /* Title displayed in header of the FxA settings panel. */
 "Settings.FxA.Title.v119" = "Conta";
+
+/* In the settings menu, on the Firefox wallpaper customization screen, this is the brand title for the section containing the Wrexham AFC wallpapers. */
+"Settings.Home.Option.Wallpaper.WrexhamBrandTitle.v155" = "Wrexham A.F.C.";
 
 /* This is the description for the setting that toggles Sync related notifications in the settings menu under the Notifications section. */
 "Settings.Notifications.SyncNotificationsStatus.v112" = "Isto deve estar ativado para receber separadores e ser notificado quando iniciar sessão noutro dispositivo.";

@@ -73,6 +73,9 @@
 /* In the AI Controls settings, in the AI powered features section, this is the message that describes the pages summaries feature */
 "Settings.AIControls.AIPoweredFeaturesSection.PageSummariesSection.Message.v151" = "Sider og sammenfatninger gemmes aldrig.";
 
+/* In the AI Controls settings, in the AI powered features section, this is the title that describes the page summaries feature */
+"Settings.AIControls.AIPoweredFeaturesSection.PageSummariesSection.Title.v151" = "Sammenfatning af sider";
+
 /* In the AI Controls settings, in the AI powered features section, this is the message that describes the Quick Answers feature */
 "Settings.AIControls.AIPoweredFeaturesSection.QuickAnswersSection.Message.v154" = "Din stemme, dine spørgsmål og dine svar gemmes aldrig.";
 
@@ -201,6 +204,9 @@
 
 /* Title displayed in header of the FxA settings panel. */
 "Settings.FxA.Title.v119" = "Konto";
+
+/* In the settings menu, on the Firefox wallpaper customization screen, this is the brand title for the section containing the Wrexham AFC wallpapers. */
+"Settings.Home.Option.Wallpaper.WrexhamBrandTitle.v155" = "Wrexham A.F.C.";
 
 /* This is the description for the setting that toggles Sync related notifications in the settings menu under the Notifications section. */
 "Settings.Notifications.SyncNotificationsStatus.v112" = "Dette skal aktiveres for at kunne modtage faneblade og få besked, når du logger ind på en anden enhed.";
