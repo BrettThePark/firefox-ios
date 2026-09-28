@@ -257,7 +257,7 @@ final class PrivateHomepageViewController: UIViewController,
     // MARK: - Screenshotable
 
     func screenshot(bounds: CGRect) -> UIImage? {
-        let renderer = UIGraphicsImageRenderer(size: bounds.size)
+        let renderer = UIGraphicsImageRenderer(size: bounds.size, format: .tabScreenshot())
 
         return renderer.image { context in
             // Draw the background gradient separately, so the potential safe area coordinates is filled with the

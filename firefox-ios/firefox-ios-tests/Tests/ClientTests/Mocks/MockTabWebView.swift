@@ -19,6 +19,7 @@ final class MockTabWebView: TabWebView {
     var mockTitle: String?
     var loadedURL: URL?
     var takeSnapshotWasCalled = false
+    var lastSnapshotConfiguration: WKSnapshotConfiguration?
     var takeSnapshotShouldFail = false
     var mockHasOnlySecureContent = false
     var mockCanGoBack = false
@@ -112,6 +113,7 @@ final class MockTabWebView: TabWebView {
         completionHandler: @escaping @MainActor (UIImage?, (any Error)?) -> Void
     ) {
         takeSnapshotWasCalled = true
+        lastSnapshotConfiguration = snapshotConfiguration
         if takeSnapshotShouldFail {
             completionHandler(nil, NSError(domain: "", code: 500, userInfo: nil))
         } else {

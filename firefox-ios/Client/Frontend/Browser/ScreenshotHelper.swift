@@ -110,13 +110,17 @@ class ScreenshotHelper {
             if UIWindow.isPortrait && !isIpad {
                 configuration.rect = screenshotBounds
             }
+            // Capture at one pixel per point. displayScale is 0 when unspecified.
+            let snapshotSize = configuration.rect.isNull ? webView.bounds.size : configuration.rect.size
+            let displayScale = max(webView.traitCollection.displayScale, 1)
+            configuration.snapshotWidth = NSNumber(value: Double(snapshotSize.width / displayScale))
             webView.setPullRefreshVisibility(isVisible: false)
 
             webView.takeSnapshot(with: configuration) { [weak tab] image, error in
                 webView.setPullRefreshVisibility(isVisible: true)
                 if let image, let tab {
                     tab.hasHomeScreenshot = false
-                    tab.setScreenshot(image)
+                    tab.setScreenshot(Self.imageWithPointSize(image, width: snapshotSize.width))
                     store.dispatch(
                         ScreenshotAction(
                             windowUUID: windowUUID,
@@ -138,5 +142,13 @@ class ScreenshotHelper {
                 }
             }
         }
+    }
+
+    /// Sets the image's scale so it is `width` points wide; WebKit returns it `snapshotWidth` points wide.
+    private static func imageWithPointSize(_ image: UIImage, width: CGFloat) -> UIImage {
+        guard let cgImage = image.cgImage, width > 0 else { return image }
+        return UIImage(cgImage: cgImage,
+                       scale: CGFloat(cgImage.width) / width,
+                       orientation: image.imageOrientation)
     }
 }

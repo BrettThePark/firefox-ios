@@ -45,6 +45,16 @@ final class HomepageViewControllerTests: XCTestCase, StoreTestUtility {
         XCTAssertEqual(sut.currentWindowUUID, .XCTestDefaultUUID)
     }
 
+    func test_screenshot_rendersOnePixelPerPoint() throws {
+        let subject = createSubject()
+        subject.loadViewIfNeeded()
+
+        let screenshot = try XCTUnwrap(subject.screenshot(bounds: CGRect(x: 0, y: 0, width: 120, height: 200)))
+
+        XCTAssertEqual(screenshot.scale, 1)
+        XCTAssertEqual(screenshot.cgImage?.width, 120)
+    }
+
     func test_viewDidLoad_setsUpThemingAndNotifications() {
         let sut = createSubject()
 

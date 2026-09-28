@@ -101,6 +101,33 @@ final class ScreenshotHelperTests: XCTestCase, StoreTestUtility {
         XCTAssertFalse(tab.hasHomeScreenshot)
     }
 
+    func testTakeScreenshotFromWebView_capturesAtOnePixelPerPoint() throws {
+        let subject = createSubject()
+        let (tab, mockTabWebView) = makeWebTab()
+        mockTabWebView.frame = CGRect(x: 0, y: 0, width: 390, height: 700)
+
+        subject.takeScreenshot(tab,
+                               windowUUID: .XCTestDefaultUUID,
+                               screenshotBounds: CGRect(x: 0, y: -60, width: 390, height: 844))
+
+        let configuration = try XCTUnwrap(mockTabWebView.lastSnapshotConfiguration)
+        let snapshotWidth = try XCTUnwrap(configuration.snapshotWidth).doubleValue
+        let pointWidth = configuration.rect.isNull ? mockTabWebView.bounds.width : configuration.rect.width
+        let displayScale = max(mockTabWebView.traitCollection.displayScale, 1)
+        XCTAssertEqual(snapshotWidth * displayScale, pointWidth, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(tab.screenshot).size.width, pointWidth, accuracy: 0.001)
+    }
+
+    private func makeWebTab() -> (Tab, MockTabWebView) {
+        let tab = Tab(profile: profile, windowUUID: .XCTestDefaultUUID)
+        let url = URL(string: "https://example.com")
+        let mockTabWebView = MockTabWebView(tab: tab)
+        mockTabWebView.loadedURL = url
+        tab.webView = mockTabWebView
+        tab.url = url
+        return (tab, mockTabWebView)
+    }
+
     private func createSubject() -> ScreenshotHelper {
         let subject = ScreenshotHelper(controller: mockVC)
         trackForMemoryLeaks(subject)

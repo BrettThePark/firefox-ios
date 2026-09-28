@@ -922,7 +922,7 @@ final class HomepageViewController: UIViewController,
     // MARK: - Screenshotable
 
     func screenshot(bounds: CGRect) -> UIImage? {
-        let renderer = UIGraphicsImageRenderer(size: bounds.size)
+        let renderer = UIGraphicsImageRenderer(size: bounds.size, format: .tabScreenshot())
 
         return renderer.image { context in
             themeManager.getCurrentTheme(for: windowUUID).colors.layer1.setFill()

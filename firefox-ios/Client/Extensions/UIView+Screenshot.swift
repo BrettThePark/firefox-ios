@@ -12,6 +12,16 @@ protocol Screenshotable {
     func screenshot(bounds: CGRect) -> UIImage?
 }
 
+extension UIGraphicsImageRendererFormat {
+    /// One pixel per point in standard range, so tab screenshots stay small in memory.
+    static func tabScreenshot() -> UIGraphicsImageRendererFormat {
+        let format = UIGraphicsImageRendererFormat.preferred()
+        format.scale = 1
+        format.preferredRange = .standard
+        return format
+    }
+}
+
 extension UIView: Screenshotable {
     /// Takes a screenshot of the view with a given quality
     /// - Parameters:

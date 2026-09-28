@@ -84,7 +84,7 @@ public actor DefaultDiskImageStore: DiskImageStore {
     public func saveImageForKey(_ key: String, image: UIImage) async throws {
         let imageURL = URL(fileURLWithPath: filesDir).appendingPathComponent(key)
 
-        guard let data = scaleImageFrom3xTo1x(image).jpegData(compressionQuality: quality) else {
+        guard let data = scaledToOnePixelPerPoint(image).jpegData(compressionQuality: quality) else {
             throw DiskImageStoreErrorCase.cannotWrite(description: "Could not write image to file")
         }
 
@@ -92,7 +92,7 @@ public actor DefaultDiskImageStore: DiskImageStore {
         keys.insert(key)
     }
 
-    private func scaleImageFrom3xTo1x(_ image: UIImage) -> UIImage {
+    private func scaledToOnePixelPerPoint(_ image: UIImage) -> UIImage {
         let targetScale: CGFloat = 1.0
 
         // FXIOS-15902 - Guard against invalid images that would crash UIGraphicsImageRenderer
