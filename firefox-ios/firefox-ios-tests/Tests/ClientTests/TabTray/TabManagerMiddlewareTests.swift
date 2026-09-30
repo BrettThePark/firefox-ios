@@ -26,7 +26,6 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility, FeatureFlag
         try await super.setUp()
         DependencyHelperMock().bootstrapDependencies()
 
-        setIsHostedSummaryEnabled(false)
         mockSummarizerConfigFactory = MockSummarizerConfigFactory()
 
         mockPinnedSites = MockablePinnedSites()
@@ -395,7 +394,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility, FeatureFlag
     }
 
     func testTabPanelProvider_dispatchesMainMenuAction_withSummaryIsAvailableTrue() throws {
-        setIsHostedSummaryEnabled(true)
+        setFeatureFlag(.hostedSummarizer, isEnabled: true)
         let expectation = XCTestExpectation(description: "expect main menu action to be fired")
         let subject = createSubject()
 
@@ -426,7 +425,7 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility, FeatureFlag
     }
 
     func testTabPanelProvider_dispatchesMainMenuAction_withSummaryIsAvailableFalse_whenWebViewNil() throws {
-        setIsHostedSummaryEnabled(true)
+        setFeatureFlag(.hostedSummarizer, isEnabled: true)
         let expectation = XCTestExpectation(description: "expect main menu action to be fired")
         let subject = createSubject()
 
@@ -1083,12 +1082,6 @@ final class TabManagerMiddlewareTests: XCTestCase, StoreTestUtility, FeatureFlag
             tab.url = URL(string: urlString)!
         }
         return tab
-    }
-
-    private func setIsHostedSummaryEnabled(_ isEnabled: Bool) {
-        return FxNimbus.shared.features.hostedSummarizerFeature.with { _, _ in
-            return HostedSummarizerFeature(enabled: isEnabled)
-        }
     }
 
     // MARK: StoreTestUtility
