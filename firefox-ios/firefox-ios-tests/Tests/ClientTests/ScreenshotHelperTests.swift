@@ -118,6 +118,24 @@ final class ScreenshotHelperTests: XCTestCase, StoreTestUtility {
         XCTAssertEqual(try XCTUnwrap(tab.screenshot).size.width, pointWidth, accuracy: 0.001)
     }
 
+    func testTakeScreenshotFromWebView_waitsForScreenUpdatesByDefault() throws {
+        let subject = createSubject()
+        let (tab, mockTabWebView) = makeWebTab()
+
+        subject.takeScreenshot(tab, windowUUID: .XCTestDefaultUUID, screenshotBounds: .zero)
+
+        XCTAssertEqual(try XCTUnwrap(mockTabWebView.lastSnapshotConfiguration).afterScreenUpdates, true)
+    }
+
+    func testTakeScreenshotFromWebView_withoutScreenUpdates_capturesCurrentScreen() throws {
+        let subject = createSubject()
+        let (tab, mockTabWebView) = makeWebTab()
+
+        subject.takeScreenshot(tab, windowUUID: .XCTestDefaultUUID, screenshotBounds: .zero, afterScreenUpdates: false)
+
+        XCTAssertEqual(try XCTUnwrap(mockTabWebView.lastSnapshotConfiguration).afterScreenUpdates, false)
+    }
+
     private func makeWebTab() -> (Tab, MockTabWebView) {
         let tab = Tab(profile: profile, windowUUID: .XCTestDefaultUUID)
         let url = URL(string: "https://example.com")

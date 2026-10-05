@@ -2892,7 +2892,10 @@ class BrowserViewController: UIViewController,
             store.dispatch(action)
             addressToolbarContainer.updateProgressBar(progress: 0.0)
         case .newTab:
-            willNavigateAway(from: tabManager.selectedTab)
+            // With top tabs, didSelectedTabChange captures the outgoing tab.
+            if !topTabsVisible {
+                willNavigateAway(from: tabManager.selectedTab)
+            }
             topTabsDidPressNewTab(tabManager.selectedTab?.isPrivate ?? false)
             recordVisitManager.resetRecording()
         }
@@ -4705,7 +4708,21 @@ extension BrowserViewController: TabManagerDelegate {
 
         // Remove the old accessibilityLabel only when the selected tab isn't the previous tab.
         // When the previous webview isn't visible anymore we ensure proper clean up for tests.
-        if let previousWebView = previousTab?.webView, selectedTab != previousTab {
+        if let previousTab, let previousWebView = previousTab.webView, selectedTab != previousTab {
+            // Capture while the webview is still in the window, so the app owns the image.
+            if topTabsVisible {
+                screenshotHelper.takeScreenshot(
+                    previousTab,
+                    windowUUID: windowUUID,
+                    screenshotBounds: CGRect(
+                        x: contentContainer.frame.origin.x,
+                        y: -contentContainer.frame.origin.y,
+                        width: view.frame.width,
+                        height: view.frame.height
+                    ),
+                    afterScreenUpdates: false
+                )
+            }
             previousWebView.endEditing(true)
             previousWebView.accessibilityLabel = nil
             previousWebView.accessibilityElementsHidden = true
@@ -4823,8 +4840,6 @@ extension BrowserViewController: TabManagerDelegate {
         }
 
         if topTabsVisible {
-            /// If we are on iPad we need to trigger `willNavigateAway` when switching tabs
-            willNavigateAway(from: previousTab)
             topTabsDidChangeTab()
         } else if isSwipingTabsEnabled {
             addressToolbarContainer.updateSkeletonAddressBarsVisibility(tabManager: tabManager)

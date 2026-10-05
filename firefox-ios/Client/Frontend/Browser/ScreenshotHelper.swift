@@ -33,6 +33,8 @@ class ScreenshotHelper {
     ///    - tab: The tab which needs to be screenshotted
     ///    - windowUUID: the id of the window in which the screenshot is made
     ///    - screenshotBounds: the rect that is used to clip the screenshot to the preferred size
+    ///    - afterScreenUpdates: whether a webview capture waits for the next screen update; `false` captures
+    ///      what is on screen now.
     ///
     /// The tool used to take a screenshot for a Tab depends on the contentType.
     /// For the homepage, the controller is used to generate the screenshot.
@@ -40,7 +42,8 @@ class ScreenshotHelper {
     @MainActor
     func takeScreenshot(_ tab: Tab,
                         windowUUID: WindowUUID,
-                        screenshotBounds: CGRect) {
+                        screenshotBounds: CGRect,
+                        afterScreenUpdates: Bool = true) {
         guard let webView = tab.webView else {
             logger.log("Tab Snapshot Error",
                        level: .debug,
@@ -103,7 +106,7 @@ class ScreenshotHelper {
             // Handle webview screenshots
         } else {
             let configuration = WKSnapshotConfiguration()
-            configuration.afterScreenUpdates = true
+            configuration.afterScreenUpdates = afterScreenUpdates
 
             // apply bounds only for iPhone in portrait, as otherwise it results in
             // bad screenshot view port.

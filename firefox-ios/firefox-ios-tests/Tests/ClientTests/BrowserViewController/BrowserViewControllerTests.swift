@@ -120,6 +120,40 @@ class BrowserViewControllerTests: XCTestCase, StoreTestUtility {
         XCTAssertEqual(topTabsViewController.privateModeButton.tintColor, DarkTheme().colors.iconOnColor)
     }
 
+    @MainActor
+    func testDidSelectedTabChange_withTopTabs_capturesPreviousTabBeforeItsWebViewIsRemoved() {
+        let subject = createSubject()
+        subject.topTabsViewController = TopTabsViewController(tabManager: tabManager, profile: profile)
+        let previousTab = Tab(profile: profile, windowUUID: .XCTestDefaultUUID)
+        let previousWebView = MockTabWebView(tab: previousTab)
+        previousTab.webView = previousWebView
+        let container = UIView()
+        container.addSubview(previousWebView)
+        let selectedTab = Tab(profile: profile, windowUUID: .XCTestDefaultUUID)
+        selectedTab.webView = MockTabWebView(tab: selectedTab)
+
+        subject.tabManager(tabManager, didSelectedTabChange: selectedTab, previousTab: previousTab, isRestoring: false)
+
+        XCTAssertIdentical(screenshotHelper.lastScreenshotTab, previousTab)
+        XCTAssertEqual(screenshotHelper.lastAfterScreenUpdates, false)
+        XCTAssertEqual(screenshotHelper.lastWebViewHadSuperview, true)
+        XCTAssertFalse(previousWebView.isDescendant(of: container))
+    }
+
+    @MainActor
+    func testDidSelectedTabChange_withoutTopTabs_doesNotCapturePreviousTab() {
+        let subject = createSubject()
+        let previousTab = Tab(profile: profile, windowUUID: .XCTestDefaultUUID)
+        previousTab.webView = MockTabWebView(tab: previousTab)
+        let selectedTab = Tab(profile: profile, windowUUID: .XCTestDefaultUUID)
+        selectedTab.webView = MockTabWebView(tab: selectedTab)
+        XCTAssertFalse(subject.topTabsVisible)
+
+        subject.tabManager(tabManager, didSelectedTabChange: selectedTab, previousTab: previousTab, isRestoring: false)
+
+        XCTAssertFalse(screenshotHelper.takeScreenshotCalled)
+    }
+
     func test_didSelectedTabChange_fromHomepageToHomepage_triggersAppropriateDispatchAction() throws {
         let subject = createSubject()
         let testTab = Tab(profile: profile, isPrivate: true, windowUUID: .XCTestDefaultUUID)
@@ -832,11 +866,18 @@ class BrowserViewControllerTests: XCTestCase, StoreTestUtility {
 class MockScreenshotHelper: ScreenshotHelper {
     var takeScreenshotCalled = false
     var onTakeScreenshot: (() -> Void)?
+    var lastScreenshotTab: Tab?
+    var lastAfterScreenUpdates: Bool?
+    var lastWebViewHadSuperview: Bool?
 
     override func takeScreenshot(_ tab: Tab,
                                  windowUUID: WindowUUID,
-                                 screenshotBounds: CGRect) {
+                                 screenshotBounds: CGRect,
+                                 afterScreenUpdates: Bool = true) {
         takeScreenshotCalled = true
+        lastScreenshotTab = tab
+        lastAfterScreenUpdates = afterScreenUpdates
+        lastWebViewHadSuperview = tab.webView?.superview != nil
         onTakeScreenshot?()
     }
 }
