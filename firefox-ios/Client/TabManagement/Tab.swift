@@ -12,10 +12,6 @@ import TabDataStore
 
 import struct Storage.PageMetadata
 
-#if DEBUG
-private var debugTabCount = 0
-#endif
-
 @MainActor
 func mostRecentTab(inTabs tabs: [Tab]) -> Tab? {
     guard var recent = tabs.first else {
@@ -502,10 +498,6 @@ class Tab: NSObject,
         self.removeDispatchQueue = dispatchQueue
         super.init()
         self.isPrivate = isPrivate
-#if DEBUG
-        debugTabCount += 1
-#endif
-
         TelemetryWrapper.recordEvent(
             category: .action,
             method: .add,
@@ -606,23 +598,6 @@ class Tab: NSObject,
                 uiTestLeakView?.removeFromSuperview()
             }
         }
-#if DEBUG
-        debugTabCount -= 1
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
-        func checkTabCount(failures: Int) {
-            // Need delay for pool to drain.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                if appDelegate.tabManager.remoteTabs.count == debugTabCount {
-                    return
-                }
-
-                // If this assert has false positives, remove it and just log an error.
-                assert(failures < 3, "Tab init/deinit imbalance, possible memory leak.")
-                checkTabCount(failures: failures + 1)
-            }
-        }
-        checkTabCount(failures: 0)
-#endif
     }
 
     /// When a user clears ALL history, `sessionData` and `historyList` need to be purged, and close the webView.

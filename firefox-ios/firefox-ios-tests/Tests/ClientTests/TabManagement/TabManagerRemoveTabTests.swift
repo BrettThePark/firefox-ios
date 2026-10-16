@@ -623,4 +623,27 @@ final class TabManagerRemoveTabTests: TabManagerTestsBase {
         XCTAssertNotEqual(tabManager.selectedTab, secondTab, "This tab should have been removed")
         XCTAssertEqual(tabManager.selectedIndex, 0, "Index of new normal tab")
     }
+
+    // MARK: - Remove Tab (deallocation)
+
+    @MainActor
+    func testRemoveTab_releasesTab() async throws {
+        let tabManager = createSubject()
+        weak var weakTab: Tab?
+        autoreleasepool {
+            let tab = tabManager.addTab(URLRequest(url: URL(string: "https://mozilla.com")!),
+                                        afterTab: nil,
+                                        isPrivate: false)
+            weakTab = tab
+            tabManager.removeTab(tab.tabUUID)
+        }
+
+        // The tab is closed on an unstructured Task [FXIOS-15339], so its deallocation is asynchronous.
+        let deadline = Date().addingTimeInterval(30)
+        while weakTab != nil, Date() < deadline {
+            try await Task.sleep(nanoseconds: 10 * NSEC_PER_MSEC)
+        }
+
+        XCTAssertNil(weakTab, "Removed tab should have been deallocated")
+    }
 }
