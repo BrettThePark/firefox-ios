@@ -4,6 +4,11 @@
 
 import Foundation
 
+// MOZ_CHANNEL_developer comes from OTHER_SWIFT_FLAGS, so a SWIFT_ACTIVE_COMPILATION_CONDITIONS override cannot hide it.
+#if MOZ_CHANNEL_developer && !DEBUG
+#error("DEBUG is not defined for Swift in this developer configuration. Check SWIFT_ACTIVE_COMPILATION_CONDITIONS.")
+#endif
+
 /// Compile-time build channel checks. No instance needed.
 ///
 /// These are features that are used for developer purposes and are
